@@ -147,7 +147,7 @@ struct ReaderSettings: View {
     }
 
     private var followRow: some View {
-        Toggle(isOn: Binding(get: { model.saved.followsPosition }, set: model.setFollowPreference)) {
+        Toggle(isOn: Binding(get: { model.saved.followsPosition }, set: { model.setFollowPreference($0) })) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Follow my voice").font(.body.weight(.medium)).foregroundStyle(Theme.ink)
                 Text("Keep the spoken line in the focus lane. Scrolling by hand pauses following for a moment.")

@@ -113,12 +113,12 @@ struct ReaderView: View {
             }
             .onChange(of: model.phase) { _, _ in updateIdleTimer() }
             .onChange(of: model.mode) { _, _ in updateIdleTimer() }
-            .onAppear(perform: updateIdleTimer)
+            .onAppear { updateIdleTimer() }
             .onDisappear {
                 model.pause()
                 UIApplication.shared.isIdleTimerDisabled = false
             }
-            .modifier(AudioSessionGuard(pause: model.pause))
+            .modifier(AudioSessionGuard(pause: { model.pause() }))
             .sensoryFeedback(.selection, trigger: model.mode)
             .sensoryFeedback(.selection, trigger: model.stageLocked)
     }
@@ -144,8 +144,8 @@ struct ReaderView: View {
         ScriptTextView(
             document: model.document, cursor: model.cursor, isTentative: model.isTentative,
             fontSize: model.saved.fontSize, followsPosition: model.followsPosition,
-            recenterID: model.recenterID, onSelect: model.selectWord,
-            onManualScroll: model.beginManualScroll, onManualScrollEnd: model.endManualScroll,
+            recenterID: model.recenterID, onSelect: { model.selectWord($0) },
+            onManualScroll: { model.beginManualScroll() }, onManualScrollEnd: { model.endManualScroll() },
             allowsInteraction: model.mode != .live || !model.stageLocked,
             typeface: typeface
         )

@@ -147,7 +147,7 @@ struct ReaderTransport: View {
             }
             Rectangle().fill(Theme.hairline).frame(height: 0.75).accessibilityHidden(true)
             HStack(spacing: 4) {
-                iconButton("Restart from beginning", symbol: "arrow.counterclockwise", id: "restartReading", action: model.restart)
+                iconButton("Restart from beginning", symbol: "arrow.counterclockwise", id: "restartReading") { model.restart() }
                 TimelineView(.animation(minimumInterval: 1, paused: model.phase != .listening)) { _ in
                     let elapsed = ReaderChrome.time(model.elapsedSeconds)
                     VStack(alignment: .leading, spacing: 0) {
@@ -240,7 +240,7 @@ struct ReaderTransport: View {
     // MARK: Controls
 
     private var microphone: some View {
-        Button(action: model.toggleListening) {
+        Button { model.toggleListening() } label: {
             ZStack {
                 ListeningHalo(active: model.phase == .listening)
                 Circle().stroke(Theme.track, lineWidth: 2.5)

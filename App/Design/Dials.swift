@@ -139,7 +139,7 @@ struct StatusDot: View {
                     .opacity(expanded ? 0 : 1)
                     .opacity(pulsing && !reducedMotion ? 1 : 0)
             }
-            .onAppear(perform: restart)
+            .onAppear { restart() }
             .onChange(of: pulsing) { restart() }
             .accessibilityHidden(true)
     }
