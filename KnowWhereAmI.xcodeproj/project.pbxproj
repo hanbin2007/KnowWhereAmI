@@ -32,6 +32,7 @@
 		EB068368591E0A66A058C230 /* RehearsalCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1193E2F752D347112444D52 /* RehearsalCharts.swift */; };
 		F04AE30AD6FD26BC3A48251D /* ReaderScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 059FAF0CC524CEF5705C8774 /* ReaderScreenshotTests.swift */; };
 		F608BC2992DD39C02E6C4EA4 /* OnDeviceSpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95C6B20627F00CC5C81E1F6 /* OnDeviceSpeechService.swift */; };
+		B28FD26C7C9F86BBFD87F2A2 /* ScreenshotTourUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +80,7 @@
 		EDA353BF2E7D5384D0485379 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F367E1F43036944507856DC3 /* RehearsalChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehearsalChartTests.swift; sourceTree = "<group>"; };
 		F95C6B20627F00CC5C81E1F6 /* OnDeviceSpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceSpeechService.swift; sourceTree = "<group>"; };
+		DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTourUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -179,6 +181,7 @@
 		663CDE53D058589641D5A32A /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */,
 				507B188EE27B042C9FE2C001 /* ReaderUITests.swift */,
 			);
 			path = UITests;
@@ -336,6 +339,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B28FD26C7C9F86BBFD87F2A2 /* ScreenshotTourUITests.swift in Sources */,
 				6931913F3AC00923FA698FE6 /* ReaderUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

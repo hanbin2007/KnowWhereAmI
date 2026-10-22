@@ -3,20 +3,85 @@ name: UI Screenshots
 on:
   push:
     branches: ["claude/**"]
+    paths: ["App/**", "AppTests/**", "UITests/**", "Sources/**", "scripts/ci/**", ".github/workflows/ui-screenshots.yml"]
   workflow_dispatch:
 
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  probe:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-26, macos-latest]
-    runs-on: ${{ matrix.os }}
+  screenshots:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
-      - name: Toolchains
+      - uses: actions/checkout@v4
+
+      - name: Adapt project to the runner SDK
+        run: sh scripts/ci/adapt-runner-sdk.sh
+
+      - name: Boot simulator
         run: |
-          sw_vers
-          ls -d /Applications/Xcode* || true
-          xcode-select -p
-          xcodebuild -version
-          xcrun simctl list runtimes
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          runtimes = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in runtimes if "iOS" in k), key=lambda k: [int(p) for p in k.rsplit("iOS-", 1)[1].split("-")])
+          for runtime in reversed(ios):
+              for device in runtimes[runtime]:
+                  if device["name"] == "iPhone 17 Pro":
+                      print(device["udid"]); sys.exit()
+          ')
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing -project KnowWhereAmI.xcodeproj -scheme KnowWhereAmI \
+            -destination "id=$UDID" -derivedDataPath build/DerivedData \
+            IPHONEOS_DEPLOYMENT_TARGET=26.0 CODE_SIGN_IDENTITY=- 2>&1 | tee build/build.log | grep -E "error:|warning: .*App/|BUILD" || true
+          grep -q "TEST BUILD SUCCEEDED" build/build.log
+
+      - name: Full suite (light)
+        id: light
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xcrun simctl ui "$UDID" appearance light
+          xcodebuild test-without-building -project KnowWhereAmI.xcodeproj -scheme KnowWhereAmI \
+            -destination "id=$UDID" -derivedDataPath build/DerivedData -resultBundlePath build/Light.xcresult \
+            IPHONEOS_DEPLOYMENT_TARGET=26.0 2>&1 | grep -E "Test Case .* (passed|failed)|error:|\*\* TEST" 
+
+      - name: Screenshot suites (dark)
+        id: dark
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xcrun simctl ui "$UDID" appearance dark
+          xcodebuild test-without-building -project KnowWhereAmI.xcodeproj -scheme KnowWhereAmI \
+            -destination "id=$UDID" -derivedDataPath build/DerivedData -resultBundlePath build/Dark.xcresult \
+            -only-testing:KnowWhereAmIUITests/ScreenshotTourUITests -only-testing:KnowWhereAmITests/ReaderScreenshotTests \
+            IPHONEOS_DEPLOYMENT_TARGET=26.0 2>&1 | grep -E "Test Case .* (passed|failed)|error:|\*\* TEST"
+
+      - name: Export screenshots
+        if: always()
+        run: |
+          [ -d build/Light.xcresult ] && python3 scripts/ci/export-screenshots.py build/Light.xcresult screenshots/light || true
+          [ -d build/Dark.xcresult ] && python3 scripts/ci/export-screenshots.py build/Dark.xcresult screenshots/dark || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots
+          if-no-files-found: warn
+
+      - name: Report test outcome
+        if: always()
+        run: |
+          echo "light=${{ steps.light.outcome }} dark=${{ steps.dark.outcome }}"
+          [ "${{ steps.light.outcome }}" = "success" ] && [ "${{ steps.dark.outcome }}" = "success" ]
