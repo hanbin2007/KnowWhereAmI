@@ -90,7 +90,7 @@ struct MatchRing: View {
 struct WordCoverageMap: View, Animatable {
     let bins: [CoverageBin]
     var progress: Double = 1
-    var animatableData: Double {
+    nonisolated var animatableData: Double {
         get { progress }
         set { progress = newValue }
     }
