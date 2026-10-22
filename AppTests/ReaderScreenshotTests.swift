@@ -83,6 +83,12 @@ final class ReaderScreenshotTests: XCTestCase {
         XCTAssertEqual(model.history.first?.statistics.wordsPerMinute, 144)
         try await Task.sleep(for: .milliseconds(1800))
         capture(window, name: "Saved rehearsal report - controlled transcript")
+        if let report = longestScrollView(in: window) {
+            report.setContentOffset(CGPoint(x: 0, y: max(0, report.contentSize.height - report.bounds.height
+                                                             + report.adjustedContentInset.bottom)), animated: false)
+            try await Task.sleep(for: .milliseconds(500))
+            capture(window, name: "Saved rehearsal report details - controlled transcript")
+        }
         model.presentedReport = nil
         try await Task.sleep(for: .milliseconds(400))
         let record = try XCTUnwrap(model.history.first)
@@ -91,7 +97,7 @@ final class ReaderScreenshotTests: XCTestCase {
         }.dynamicTypeSize(.accessibility5))
         accessibleReport.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
         window.rootViewController = accessibleReport
-        try await Task.sleep(for: .milliseconds(1800))
+        try await Task.sleep(for: .milliseconds(2600))
         capture(window, name: "Accessibility visual rehearsal report - controlled transcript")
     }
 
@@ -104,6 +110,19 @@ final class ReaderScreenshotTests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// The report's scroll view: the tallest scrollable content that is not the manuscript.
+    private func longestScrollView(in view: UIView) -> UIScrollView? {
+        var candidates: [UIScrollView] = []
+        func visit(_ view: UIView) {
+            if let scroll = view as? UIScrollView, !(scroll is UITextView), scroll.contentSize.height > scroll.bounds.height {
+                candidates.append(scroll)
+            }
+            view.subviews.forEach(visit)
+        }
+        visit(view)
+        return candidates.max { $0.contentSize.height < $1.contentSize.height }
     }
 
     private func findReader(in view: UIView) -> UITextView? {

@@ -96,11 +96,14 @@ struct ScriptLibraryView: View {
                 Button { section = item } label: {
                     HStack(spacing: 6) {
                         Text(item.rawValue).font(.subheadline.weight(.semibold))
-                        Text("\(count)")
-                            .font(.caption2.weight(.bold)).monospacedDigit()
-                            .padding(.horizontal, 6).padding(.vertical, 1.5)
-                            .background(selected ? Theme.accent.opacity(0.14) : Theme.track, in: Capsule())
-                            .contentTransition(.numericText(value: Double(count)))
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                        if !typeSize.isAccessibilitySize {
+                            Text("\(count)")
+                                .font(.caption2.weight(.bold)).monospacedDigit()
+                                .padding(.horizontal, 6).padding(.vertical, 1.5)
+                                .background(selected ? Theme.accent.opacity(0.14) : Theme.track, in: Capsule())
+                                .contentTransition(.numericText(value: Double(count)))
+                        }
                     }
                     .foregroundStyle(selected ? Theme.ink : .secondary)
                     .frame(maxWidth: .infinity, minHeight: 40)
@@ -123,6 +126,7 @@ struct ScriptLibraryView: View {
         .background(Theme.track, in: Capsule())
         .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 10)
         .background(Theme.paper)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("librarySection")
     }
@@ -188,8 +192,12 @@ struct ScriptLibraryView: View {
                         .lineSpacing(2).lineLimit(4)
                     Spacer(minLength: 8)
                     VStack(alignment: .leading, spacing: 7) {
-                        Text(ReadingLength.summary(words: words))
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("\(words) \(words == 1 ? "word" : "words")")
+                                .font(.caption.weight(.medium).monospacedDigit()).foregroundStyle(Theme.ink.opacity(0.7))
+                            Text(words == 0 ? "Empty" : "\(ReadingLength.minutes(words: words)) min aloud")
+                                .font(.caption).foregroundStyle(.tertiary)
+                        }
                         if let lastRun {
                             HStack(spacing: 6) {
                                 MatchDial(matched: lastRun.statistics.matchedWords, missed: lastRun.statistics.missedWords,

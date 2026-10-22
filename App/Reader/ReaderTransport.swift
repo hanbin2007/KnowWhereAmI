@@ -24,16 +24,19 @@ struct ReaderTransport: View {
         .transaction { if reducedMotion { $0.disablesAnimations = true } }
     }
 
-    /// Lets the manuscript dissolve into the paper before it reaches the console.
+    /// Lets the manuscript dissolve into the paper just above the mode switch,
+    /// so neither the switch nor the glass console ever shows text behind it.
     private var scrim: some View {
-        LinearGradient(stops: [.init(color: Theme.paper.opacity(0), location: 0),
-                               .init(color: Theme.paper.opacity(0.94), location: 0.3),
-                               .init(color: Theme.paper, location: 1)],
-                       startPoint: .top, endPoint: .bottom)
-            .padding(.top, -56)
-            .ignoresSafeArea(edges: .bottom)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+        VStack(spacing: 0) {
+            LinearGradient(colors: [Theme.paper.opacity(0), Theme.paper.opacity(0.9), Theme.paper],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 56)
+            Theme.paper
+        }
+        .padding(.top, -48)
+        .ignoresSafeArea(edges: .bottom)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     // MARK: Mode
