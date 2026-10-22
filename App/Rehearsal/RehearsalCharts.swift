@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 struct CoverageBin: Equatable {
@@ -27,70 +26,94 @@ struct CoverageBin: Equatable {
 }
 
 enum RehearsalColor {
-    static let matched = Color.accentColor
-    static let missed = Color(red: 0.79, green: 0.27, blue: 0.15)
-    static let unassessed = Color(uiColor: .tertiarySystemFill)
+    static let matched = Theme.accent
+    static let missed = Theme.missed
+    static let unassessed = Color.primary.opacity(0.07)
 }
 
+/// The report's centerpiece: matched words sweep around first, then the misses.
+/// `progress` runs 0…1 so the ring can draw itself in when the report opens.
 struct MatchRing: View {
     let matched: Int
     let missed: Int
+    var progress: Double = 1
+    var diameter: CGFloat = 196
+    private let lineWidth: CGFloat = 15
     private var assessed: Int { matched + missed }
+    private var share: Double { assessed > 0 ? Double(matched) / Double(assessed) : 0 }
     private var percentage: String {
-        assessed > 0 ? "\(Int((Double(matched) / Double(assessed) * 100).rounded()))%" : "--"
+        assessed > 0 ? "\(Int((share * 100).rounded()))%" : "--"
     }
 
     var body: some View {
+        let gap = matched > 0 && missed > 0 ? 0.012 : 0
         ZStack {
+            Circle().stroke(RehearsalColor.unassessed, lineWidth: lineWidth)
             if assessed > 0 {
-                Chart {
-                    if matched > 0 {
-                        SectorMark(angle: .value("Matched", matched), innerRadius: .ratio(0.82), angularInset: 2)
-                            .cornerRadius(3).foregroundStyle(RehearsalColor.matched)
-                    }
-                    if missed > 0 {
-                        SectorMark(angle: .value("Estimated missed", missed), innerRadius: .ratio(0.82), angularInset: 2)
-                            .cornerRadius(3).foregroundStyle(RehearsalColor.missed)
+                arc(0, max(0, share - gap) * progress)
+                    .stroke(RehearsalColor.matched, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                if missed > 0 {
+                    let start = min(1, share + gap)
+                    arc(start, start + max(0, 1 - start - gap) * progress)
+                        .stroke(RehearsalColor.missed, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                }
+            }
+            VStack(spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text(assessed > 0 ? "\(Int((share * 100 * progress).rounded()))" : "\u{2014}")
+                        .font(.system(size: 54, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText(value: share * progress))
+                    if assessed > 0 {
+                        Text("%").font(.figure(.title3, weight: .semibold)).foregroundStyle(.secondary)
                     }
                 }
-                .chartLegend(.hidden)
-            } else {
-                Circle().strokeBorder(RehearsalColor.unassessed, lineWidth: 14)
+                .foregroundStyle(assessed > 0 ? Theme.ink : Color.secondary)
+                Text("Est. match").font(.caption.weight(.medium)).foregroundStyle(.secondary)
             }
-            VStack(spacing: 3) {
-                Text(percentage)
-                    .font(.system(.largeTitle, design: .rounded, weight: .medium))
-                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
-                Text("Est. match").font(.caption2).foregroundStyle(.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-            }
-            .padding(30)
+            .lineLimit(1).minimumScaleFactor(0.5)
+            .padding(lineWidth + 14)
         }
-        .frame(width: 176, height: 176)
+        .frame(width: diameter, height: diameter)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Estimated script match in assessed text")
         .accessibilityValue(assessed > 0 ? "\(percentage), \(matched) matched, \(missed) estimated missed, \(assessed) assessed words" : "Not assessed")
     }
+
+    private func arc(_ from: Double, _ to: Double) -> some Shape {
+        Circle().trim(from: from, to: max(from, to)).rotation(.degrees(-90))
+    }
 }
 
-struct WordCoverageMap: View {
+/// Every word of the manuscript as a tile, from the first line to the last.
+/// Tiles fill in as a wave while `progress` runs from 0 to 1.
+struct WordCoverageMap: View, Animatable {
     let bins: [CoverageBin]
+    var progress: Double = 1
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
     private var columns: Int { min(24, max(1, bins.count)) }
     private let gap = 3.0
-    private let cellHeight = 9.0
+    private let cellHeight = 10.0
     private var rows: Int { (bins.count + columns - 1) / columns }
 
     var body: some View {
         Canvas { context, size in
             let width = max(0, (size.width - gap * Double(columns - 1)) / Double(columns))
             let capacity = Double(max(1, bins.map(\.total).max() ?? 1))
+            let front = progress * Double(bins.count + 12)
             for (index, bin) in bins.enumerated() {
                 let rect = CGRect(x: Double(index % columns) * (width + gap),
                                   y: Double(index / columns) * (cellHeight + gap),
                                   width: width * Double(bin.total) / capacity, height: cellHeight)
-                let shape = Path(roundedRect: rect, cornerRadius: 1.5)
+                let shape = Path(roundedRect: rect, cornerRadius: 2.5, style: .continuous)
                 context.fill(shape, with: .color(RehearsalColor.unassessed))
+                let reveal = min(1, max(0, (front - Double(index)) / 12))
+                guard reveal > 0 else { continue }
                 var colored = context
+                colored.opacity = reveal
                 colored.clip(to: shape)
                 let matchedWidth = width * Double(bin.matched) / capacity
                 let missedWidth = width * Double(bin.missed) / capacity

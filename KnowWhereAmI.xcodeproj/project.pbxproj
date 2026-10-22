@@ -33,6 +33,8 @@
 		F04AE30AD6FD26BC3A48251D /* ReaderScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 059FAF0CC524CEF5705C8774 /* ReaderScreenshotTests.swift */; };
 		F608BC2992DD39C02E6C4EA4 /* OnDeviceSpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95C6B20627F00CC5C81E1F6 /* OnDeviceSpeechService.swift */; };
 		B28FD26C7C9F86BBFD87F2A2 /* ScreenshotTourUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */; };
+		E756F210BFE1014CF6D6F8A8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15304E525C68AF64FBC4BDE /* Theme.swift */; };
+		8FAFD2AE5F7CF38F5BE6C982 /* Dials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB301A6D028F1AA12DB3D00 /* Dials.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +83,8 @@
 		F367E1F43036944507856DC3 /* RehearsalChartTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehearsalChartTests.swift; sourceTree = "<group>"; };
 		F95C6B20627F00CC5C81E1F6 /* OnDeviceSpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceSpeechService.swift; sourceTree = "<group>"; };
 		DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTourUITests.swift; sourceTree = "<group>"; };
+		F15304E525C68AF64FBC4BDE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		8AB301A6D028F1AA12DB3D00 /* Dials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dials.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +128,7 @@
 		2D1369C6DD17BBADFA32E420 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				5686D058D3AD88974797C814 /* Design */,
 				EDA353BF2E7D5384D0485379 /* Assets.xcassets */,
 				5EA5ACEE8762A5D1DBD82131 /* KnowWhereAmIApp.swift */,
 				220988574ED7807560F77493 /* Editor */,
@@ -215,6 +220,15 @@
 				F367E1F43036944507856DC3 /* RehearsalChartTests.swift */,
 			);
 			path = AppTests;
+			sourceTree = "<group>";
+		};
+		5686D058D3AD88974797C814 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				8AB301A6D028F1AA12DB3D00 /* Dials.swift */,
+				F15304E525C68AF64FBC4BDE /* Theme.swift */,
+			);
+			path = Design;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -348,6 +362,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FAFD2AE5F7CF38F5BE6C982 /* Dials.swift in Sources */,
+				E756F210BFE1014CF6D6F8A8 /* Theme.swift in Sources */,
 				C7B90F31A8D1DFC7E2082277 /* FocusScrollDriver.swift in Sources */,
 				DAE610D0DD703AEBDA6A6EEE /* KnowWhereAmIApp.swift in Sources */,
 				F608BC2992DD39C02E6C4EA4 /* OnDeviceSpeechService.swift in Sources */,

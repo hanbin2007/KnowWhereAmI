@@ -2,7 +2,7 @@ import SwiftUI
 
 enum ReaderChrome {
     static let buttonFill = Color(red: 0.055, green: 0.42, blue: 0.333)
-    static let motion = Animation.spring(response: 0.3, dampingFraction: 1)
+    static let motion = Motion.morph
 
     static func time(_ elapsed: Double) -> String {
         let seconds = Int(max(0, elapsed.isFinite ? elapsed : 0))
@@ -10,15 +10,29 @@ enum ReaderChrome {
     }
 }
 
-struct ReaderGlass: ViewModifier {
+/// Liquid Glass with a solid paper fallback for Reduce Transparency.
+struct ReaderGlass<S: InsettableShape>: ViewModifier {
+    let shape: S
+    var interactive = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     func body(content: Content) -> some View {
         if reduceTransparency {
-            content.background(Color(uiColor: .secondarySystemBackground), in: Capsule())
-                .overlay { Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5) }
+            content.background(Theme.sheet, in: shape)
+                .overlay { shape.strokeBorder(.primary.opacity(0.12), lineWidth: 0.5) }
         } else {
-            content.glassEffect(.regular, in: .capsule)
+            content.glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
         }
+    }
+}
+
+extension ReaderGlass where S == Capsule {
+    init() { shape = Capsule() }
+}
+
+extension View {
+    func readerGlass<S: InsettableShape>(_ shape: S, interactive: Bool = false) -> some View {
+        modifier(ReaderGlass(shape: shape, interactive: interactive))
     }
 }
 

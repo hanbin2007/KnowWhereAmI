@@ -39,7 +39,7 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         alwaysBounceVertical = true
         alwaysBounceHorizontal = false
         contentInsetAdjustmentBehavior = .never
-        textContainerInset = UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 24)
+        textContainerInset = UIEdgeInsets(top: 12, left: 26, bottom: 12, right: 26)
         textContainer.lineFragmentPadding = 0
         textContainer.widthTracksTextView = true
         delegate = self
@@ -47,9 +47,11 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         highlight.isUserInteractionEnabled = false
         highlight.accessibilityElementsHidden = true
         highlight.accessibilityIdentifier = "currentWordHighlight"
-        highlight.layer.cornerRadius = 4
+        highlight.layer.cornerRadius = 7
+        highlight.layer.cornerCurve = .continuous
+        highlight.clipsToBounds = true
         underline.isUserInteractionEnabled = false
-        underline.layer.cornerRadius = 1
+        underline.layer.cornerRadius = 1.25
         highlight.addSubview(underline)
         insertSubview(highlight, at: 0)
         highlight.alpha = 0
@@ -60,8 +62,8 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
 
     func configure(document: ScriptDocument, cursor: Int?, tentative: Bool, pointSize: Double,
                    dark: Bool, typeSize: DynamicTypeSize, follows: Bool, recenter: Int,
-                   reducedMotion: Bool, allowsInteraction: Bool) {
-        let nextStyle = Style(text: document.text, size: pointSize, dark: dark, type: typeSize)
+                   reducedMotion: Bool, allowsInteraction: Bool, serif: Bool = false) {
+        let nextStyle = Style(text: document.text, size: pointSize, dark: dark, type: typeSize, serif: serif)
         let rebuild = style != nextStyle
         let cursorChanged = self.cursor != cursor || self.tentative != tentative
         self.document = document
@@ -78,13 +80,15 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         showsVerticalScrollIndicator = allowsInteraction
         if rebuild {
             let paragraph = NSMutableParagraphStyle()
-            paragraph.lineSpacing = 10
+            paragraph.lineSpacing = serif ? 11 : 10
             paragraph.paragraphSpacing = 6
-            let font = UIFontMetrics(forTextStyle: .body).scaledFont(
-                for: .systemFont(ofSize: CGFloat(pointSize)), compatibleWith: traitCollection
-            )
+            var base = UIFont.systemFont(ofSize: CGFloat(pointSize))
+            if serif, let descriptor = base.fontDescriptor.withDesign(.serif) {
+                base = UIFont(descriptor: descriptor, size: CGFloat(pointSize))
+            }
+            let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: base, compatibleWith: traitCollection)
             textStorage.setAttributedString(NSAttributedString(string: document.text, attributes: [
-                .font: font, .foregroundColor: UIColor.label, .paragraphStyle: paragraph
+                .font: font, .foregroundColor: UIColor.ink, .paragraphStyle: paragraph, .kern: serif ? 0.1 : 0
             ]))
             if style?.text != nextStyle.text { hasPlacedFocus = false }
             style = nextStyle
@@ -144,11 +148,10 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         let nextPrefix = cursor.flatMap { document.words.indices.contains($0) ? document.words[$0].range.location : nil } ?? 0
         textStorage.beginEditing()
         if previousPrefix > nextPrefix {
-            textStorage.addAttribute(.foregroundColor, value: UIColor.label,
+            textStorage.addAttribute(.foregroundColor, value: UIColor.ink,
                                      range: NSRange(location: nextPrefix, length: previousPrefix - nextPrefix))
         } else if nextPrefix > previousPrefix {
-            let color = dark ? UIColor(white: 0.64, alpha: 1) : UIColor(red: 0.39, green: 0.43, blue: 0.41, alpha: 1)
-            textStorage.addAttribute(.foregroundColor, value: color,
+            textStorage.addAttribute(.foregroundColor, value: UIColor.spokenInk,
                                      range: NSRange(location: previousPrefix, length: nextPrefix - previousPrefix))
         }
         textStorage.endEditing()
@@ -165,24 +168,27 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         var rect = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
         rect.origin.x += textContainerInset.left
         rect.origin.y += textContainerInset.top
-        rect = rect.insetBy(dx: -3, dy: -1)
-        let color = tentative ? UIColor.systemYellow : UIColor.systemGreen
-        highlight.backgroundColor = color.withAlphaComponent(dark ? 0.22 : 0.18)
-        underline.backgroundColor = tentative ? .systemOrange : tintColor
+        rect = rect.insetBy(dx: -5, dy: -1)
+        let color: UIColor = tentative ? .dynamic(light: 0xE9B44C, dark: 0xF0B653) : tintColor
+        highlight.backgroundColor = color.withAlphaComponent(dark ? 0.24 : 0.15)
+        underline.backgroundColor = tentative ? .dynamic(light: 0xB7791A, dark: 0xF0B653) : tintColor
         guard rect != highlightFrame else { return }
         let sameLine = !highlightFrame.isNull && abs(rect.midY - highlightFrame.midY) < rect.height / 2
+        let underlineFrame = CGRect(x: 5, y: rect.height - 2.5, width: max(0, rect.width - 10), height: 2.5)
         if reducedMotion || !sameLine {
             highlight.layer.removeAllAnimations()
             highlight.frame = rect
+            underline.frame = underlineFrame
             highlight.alpha = reducedMotion ? 1 : 0.3
-            if !reducedMotion { UIView.animate(withDuration: 0.16) { self.highlight.alpha = 1 } }
+            if !reducedMotion { UIView.animate(withDuration: 0.18) { self.highlight.alpha = 1 } }
         } else {
-            UIView.animate(withDuration: 0.16, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseOut]) {
+            // The pill glides along the line to the next word.
+            UIView.animate(springDuration: 0.24, bounce: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
                 self.highlight.frame = rect
+                self.underline.frame = underlineFrame
                 self.highlight.alpha = 1
             }
         }
-        underline.frame = CGRect(x: 3, y: rect.height - 2, width: max(0, rect.width - 6), height: 2)
         highlightFrame = rect
     }
 
@@ -213,5 +219,6 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         let size: Double
         let dark: Bool
         let type: DynamicTypeSize
+        let serif: Bool
     }
 }

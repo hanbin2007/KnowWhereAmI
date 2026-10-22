@@ -81,7 +81,7 @@ final class ReaderScreenshotTests: XCTestCase {
         }
         XCTAssertEqual(model.history.first?.statistics.missedWords, 1)
         XCTAssertEqual(model.history.first?.statistics.wordsPerMinute, 144)
-        try await Task.sleep(for: .milliseconds(700))
+        try await Task.sleep(for: .milliseconds(1800))
         capture(window, name: "Saved rehearsal report - controlled transcript")
         model.presentedReport = nil
         try await Task.sleep(for: .milliseconds(400))
@@ -91,7 +91,7 @@ final class ReaderScreenshotTests: XCTestCase {
         }.dynamicTypeSize(.accessibility5))
         accessibleReport.traitOverrides.preferredContentSizeCategory = .accessibilityExtraExtraExtraLarge
         window.rootViewController = accessibleReport
-        try await Task.sleep(for: .milliseconds(500))
+        try await Task.sleep(for: .milliseconds(1800))
         capture(window, name: "Accessibility visual rehearsal report - controlled transcript")
     }
 
