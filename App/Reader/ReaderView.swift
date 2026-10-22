@@ -1,4 +1,3 @@
-import AVFoundation
 import KnowWhereAmICore
 import SwiftUI
 
@@ -17,56 +16,67 @@ struct ReaderView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Theme.paper.ignoresSafeArea()
-                if model.document.words.isEmpty {
-                    BlankPage { openEditor(isNew: true) }
-                        .padding(.bottom, 160)
-                        .transition(.opacity.combined(with: .scale(scale: 0.97)))
-                } else {
-                    manuscript.transition(.opacity)
-                }
+            withLifecycle(withSheets(stage))
+        }
+        .tint(.accentColor)
+    }
+
+    private var stage: some View {
+        ZStack {
+            Theme.paper.ignoresSafeArea()
+            if model.document.words.isEmpty {
+                BlankPage { openEditor(isNew: true) }
+                    .padding(.bottom, 160)
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
+            } else {
+                manuscript.transition(.opacity)
             }
-            .overlay(alignment: .top) {
-                heading
-                    .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+        }
+        .overlay(alignment: .top) {
+            heading.dynamicTypeSize(...DynamicTypeSize.accessibility2)
+        }
+        .overlay(alignment: .bottom) {
+            ReaderTransport(model: model).dynamicTypeSize(...DynamicTypeSize.accessibility2)
+        }
+        .calmAnimation(Motion.gentle, value: model.document.words.isEmpty)
+        .navigationTitle("KnowWhereAmI")
+        .toolbarTitleDisplayMode(.inline)
+        .toolbar { toolbar }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Text("KnowWhereAmI")
+                .font(.display(.subheadline, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
+        ToolbarItem(placement: .topBarLeading) {
+            Button("Script library", systemImage: "books.vertical") {
+                model.pause()
+                showsLibrary = true
             }
-            .overlay(alignment: .bottom) {
-                ReaderTransport(model: model)
-                    .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+            .accessibilityIdentifier("scriptLibrary").help("Script library")
+            .matchedTransitionSource(id: "library", in: sheets)
+        }
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("Edit script", systemImage: "square.and.pencil") {
+                openEditor(isNew: model.library.selectedID == nil)
             }
-            .calmAnimation(Motion.gentle, value: model.document.words.isEmpty)
-            .navigationTitle("KnowWhereAmI")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("KnowWhereAmI")
-                        .font(.display(.subheadline, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Script library", systemImage: "books.vertical") {
-                        model.pause()
-                        showsLibrary = true
-                    }
-                    .accessibilityIdentifier("scriptLibrary").help("Script library")
-                    .matchedTransitionSource(id: "library", in: sheets)
-                }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button("Edit script", systemImage: "square.and.pencil") {
-                        openEditor(isNew: model.library.selectedID == nil)
-                    }
-                    .accessibilityIdentifier("editScript").help("Edit script")
-                    .matchedTransitionSource(id: "editor", in: sheets)
-                    Button("Reader settings", systemImage: "textformat.size") {
-                        model.pause()
-                        showsSettings = true
-                    }
-                    .accessibilityIdentifier("readerSettings").help("Reader settings")
-                    .matchedTransitionSource(id: "settings", in: sheets)
-                }
+            .accessibilityIdentifier("editScript").help("Edit script")
+            .matchedTransitionSource(id: "editor", in: sheets)
+            Button("Reader settings", systemImage: "textformat.size") {
+                model.pause()
+                showsSettings = true
             }
+            .accessibilityIdentifier("readerSettings").help("Reader settings")
+            .matchedTransitionSource(id: "settings", in: sheets)
+        }
+    }
+
+    private func withSheets(_ content: some View) -> some View {
+        content
             .sheet(item: $editorRequest) { request in
                 ScriptEditor(model: model, isNew: request.isNew).id(request.id)
                     .navigationTransition(.zoom(sourceID: "editor", in: sheets))
@@ -77,12 +87,7 @@ struct ReaderView: View {
                     .navigationTransition(.zoom(sourceID: "settings", in: sheets))
                     .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $showsLibrary, onDismiss: {
-                if let isNew = editAfterLibrary {
-                    editAfterLibrary = nil
-                    openEditor(isNew: isNew)
-                }
-            }) {
+            .sheet(isPresented: $showsLibrary, onDismiss: libraryDismissed) {
                 ScriptLibraryView(model: model, onChoose: { showsLibrary = false }, onNew: {
                     editAfterLibrary = true
                     showsLibrary = false
@@ -94,26 +99,14 @@ struct ReaderView: View {
                 .presentationDragIndicator(.visible)
             }
             .sheet(item: $model.presentedReport) { record in
-                NavigationStack {
-                    RehearsalReportView(record: record)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Done") { model.presentedReport = nil }.accessibilityIdentifier("closeReport")
-                            }
-                        }
-                }
-                .navigationTransition(.zoom(sourceID: "report", in: sheets))
+                ReportSheet(record: record) { model.presentedReport = nil }
+                    .navigationTransition(.zoom(sourceID: "report", in: sheets))
             }
-            .alert(item: $model.alert) { alert in
-                if alert.offersSettings {
-                    Alert(title: Text(alert.title), message: Text(alert.message),
-                          primaryButton: .default(Text("Open Settings")) {
-                              if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-                          }, secondaryButton: .cancel(Text("Dismiss")))
-                } else {
-                    Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
-                }
-            }
+    }
+
+    private func withLifecycle(_ content: some View) -> some View {
+        content
+            .alert(item: $model.alert, content: makeAlert)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background { model.pause() }
                 updateIdleTimer()
@@ -125,18 +118,26 @@ struct ReaderView: View {
                 model.pause()
                 UIApplication.shared.isIdleTimerDisabled = false
             }
-            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.didBecomeInactiveNotification)) { notification in
-                let context = notification.userInfo?[AVAudioSession.deactivationContextKey] as? AVAudioSession.DeactivationContext
-                if context?.source != .app { model.pause() }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { notification in
-                if let reason = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
-                   reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { model.pause() }
-            }
+            .modifier(AudioSessionGuard(pause: model.pause))
             .sensoryFeedback(.selection, trigger: model.mode)
             .sensoryFeedback(.selection, trigger: model.stageLocked)
+    }
+
+    private func makeAlert(_ alert: ReaderAlert) -> Alert {
+        guard alert.offersSettings else {
+            return Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("OK")))
         }
-        .tint(.accentColor)
+        return Alert(title: Text(alert.title), message: Text(alert.message),
+                     primaryButton: .default(Text("Open Settings")) {
+                         if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                     }, secondaryButton: .cancel(Text("Dismiss")))
+    }
+
+    private func libraryDismissed() {
+        if let isNew = editAfterLibrary {
+            editAfterLibrary = nil
+            openEditor(isNew: isNew)
+        }
     }
 
     private var manuscript: some View {
@@ -229,6 +230,22 @@ struct ReaderView: View {
     private struct EditorRequest: Identifiable {
         let id = UUID()
         let isNew: Bool
+    }
+}
+
+private struct ReportSheet: View {
+    let record: RehearsalRecord
+    let onDone: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            RehearsalReportView(record: record)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done", action: onDone).accessibilityIdentifier("closeReport")
+                    }
+                }
+        }
     }
 }
 

@@ -35,6 +35,7 @@
 		B28FD26C7C9F86BBFD87F2A2 /* ScreenshotTourUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */; };
 		E756F210BFE1014CF6D6F8A8 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15304E525C68AF64FBC4BDE /* Theme.swift */; };
 		8FAFD2AE5F7CF38F5BE6C982 /* Dials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB301A6D028F1AA12DB3D00 /* Dials.swift */; };
+		FDC5E19371424386EB32A6F7 /* AudioSessionGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BFF77384EA084F843A7E16 /* AudioSessionGuard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +86,7 @@
 		DC48379587DEF8844F18129E /* ScreenshotTourUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTourUITests.swift; sourceTree = "<group>"; };
 		F15304E525C68AF64FBC4BDE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		8AB301A6D028F1AA12DB3D00 /* Dials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dials.swift; sourceTree = "<group>"; };
+		A2BFF77384EA084F843A7E16 /* AudioSessionGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionGuard.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -154,6 +156,7 @@
 		3EFE0EF4AD99D3248133E5C8 /* Speech */ = {
 			isa = PBXGroup;
 			children = (
+				A2BFF77384EA084F843A7E16 /* AudioSessionGuard.swift */,
 				F95C6B20627F00CC5C81E1F6 /* OnDeviceSpeechService.swift */,
 			);
 			path = Speech;
@@ -362,6 +365,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FDC5E19371424386EB32A6F7 /* AudioSessionGuard.swift in Sources */,
 				8FAFD2AE5F7CF38F5BE6C982 /* Dials.swift in Sources */,
 				E756F210BFE1014CF6D6F8A8 /* Theme.swift in Sources */,
 				C7B90F31A8D1DFC7E2082277 /* FocusScrollDriver.swift in Sources */,
