@@ -1,0 +1,80 @@
+name: KnowWhereAmI
+options:
+  bundleIdPrefix: com.zhb
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: "27.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+packages:
+  ReaderCore:
+    path: .
+targets:
+  KnowWhereAmI:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: [Info.plist]
+    dependencies:
+      - package: ReaderCore
+        product: KnowWhereAmICore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zhb.KnowWhereAmI
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 2
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleDisplayName: KnowWhereAmI
+        NSMicrophoneUsageDescription: Your microphone follows your spoken English against your script. Audio is processed on your iPhone and is not saved.
+        NSSpeechRecognitionUsageDescription: Speech recognition finds your position in your English script on this device.
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        "UISupportedInterfaceOrientations~ipad": [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIApplicationSupportsIndirectInputEvents: true
+        UIFileSharingEnabled: false
+        LSSupportsOpeningDocumentsInPlace: true
+  KnowWhereAmIUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: KnowWhereAmI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zhb.KnowWhereAmI.UITests
+        GENERATE_INFOPLIST_FILE: YES
+  KnowWhereAmITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    dependencies:
+      - target: KnowWhereAmI
+      - package: ReaderCore
+        product: KnowWhereAmICore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.zhb.KnowWhereAmI.Tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  KnowWhereAmI:
+    build:
+      targets:
+        KnowWhereAmI: all
+        KnowWhereAmIUITests: [test]
+        KnowWhereAmITests: [test]
+    test:
+      targets: [KnowWhereAmITests, KnowWhereAmIUITests]
+      gatherCoverageData: false
