@@ -1,0 +1,22 @@
+name: UI Screenshots
+
+on:
+  push:
+    branches: ["claude/**"]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Toolchains
+        run: |
+          sw_vers
+          ls -d /Applications/Xcode* || true
+          xcode-select -p
+          xcodebuild -version
+          xcrun simctl list runtimes
