@@ -5,3 +5,5 @@ set -eu
 cd "$(dirname "$0")/../.."
 cp scripts/ci/SpeechServiceStub.swift App/Speech/OnDeviceSpeechService.swift
 sed -i '' 's/\.iOS("27\.0")/.iOS("26.0")/' Package.swift
+sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 27\.0;/IPHONEOS_DEPLOYMENT_TARGET = 26.0;/' KnowWhereAmI.xcodeproj/project.pbxproj
+mkdir -p build
