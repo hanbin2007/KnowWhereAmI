@@ -44,7 +44,10 @@ jobs:
           xcodebuild build-for-testing -project KnowWhereAmI.xcodeproj -scheme KnowWhereAmI \
             -destination "id=$UDID" -derivedDataPath build/DerivedData \
             IPHONEOS_DEPLOYMENT_TARGET=26.0 CODE_SIGN_IDENTITY=- 2>&1 | tee build/build.log | grep -E "error:|warning: .*App/|BUILD" || true
-          grep -q "TEST BUILD SUCCEEDED" build/build.log
+          if ! grep -q "TEST BUILD SUCCEEDED" build/build.log; then
+            grep -n -E -B2 -A6 "error|failed|FAILED" build/build.log | tail -n 150
+            exit 1
+          fi
 
       - name: Full suite (light)
         id: light
