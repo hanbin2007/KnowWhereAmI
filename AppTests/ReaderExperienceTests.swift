@@ -109,6 +109,76 @@ final class ReaderExperienceTests: XCTestCase {
         await waitForStop(model)
     }
 
+    func testContinuousPracticeSpeechFollowsEveryWordBeforeAnyFinalResult() async throws {
+        let (model, _, speech, _) = try fixture(text: ReaderModel.practice.text)
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        for count in 1...model.document.words.count {
+            let text = model.document.words.prefix(count).map(\.text).joined(separator: " ")
+            await speech.send(.transcript(SpeechChunk(start: 0, end: Double(count), text: text, isFinal: false)))
+            XCTAssertEqual(model.cursor, count - 1, "Continuous reading stopped at word \(count)")
+            XCTAssertNil(model.confirmedCursor)
+        }
+        XCTAssertEqual(model.phase, .listening)
+        XCTAssertEqual(model.statistics.assessedWords, 0)
+        XCTAssertTrue(model.history.isEmpty)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testOneNewWordCannotBorrowFinalizedHistoryToJumpAhead() async throws {
+        let (model, _, speech, _) = try fixture(text: "Opening remarks explain our purpose clearly. We build futures together.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 2, text: "opening remarks explain our purpose clearly", isFinal: true)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 2, end: 3, text: "together", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        XCTAssertTrue(model.isFindingPosition)
+        XCTAssertEqual(model.statistics.assessedWords, 6)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testASRNoiseHoldsPositionAndLaterRefinementResumesFollowing() async throws {
+        let (model, _, speech, _) = try fixture(text: "We can create a better future together.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "we can", isFinal: true)))
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "create a better", isFinal: false)))
+        XCTAssertEqual(model.cursor, 4)
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "creative purple weather", isFinal: false)))
+        XCTAssertEqual(model.cursor, 4)
+        XCTAssertEqual(model.confirmedCursor, 1)
+        XCTAssertTrue(model.isFindingPosition)
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 3, text: "create a better future", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        XCTAssertFalse(model.isFindingPosition)
+        XCTAssertEqual(model.statistics.assessedWords, 2)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testMergedAudioRangeCanExtendAnEarlierHypothesisPastNewerChunks() async throws {
+        let (model, _, speech, _) = try fixture(text: "We can create a better future together.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "we can", isFinal: false)))
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "create a", isFinal: false)))
+        XCTAssertEqual(model.cursor, 3)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 3, text: "we can create a better future", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 3, text: "we can create a better future", isFinal: true)))
+        XCTAssertEqual(model.cursor, 5)
+        XCTAssertEqual(model.confirmedCursor, 5)
+        model.pause()
+        await waitForStop(model)
+    }
+
     func testFinishingDrainsTheLastFinalResultBeforeSavingTheReport() async throws {
         let (model, _, speech, time) = try fixture()
         model.toggleListening()

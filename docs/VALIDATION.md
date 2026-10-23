@@ -107,3 +107,43 @@ and failed/revoked results that must not snap outside the visible limits. Delaye
 finals with revised, shortened, or extended text retain validated full-segment
 coverage without moving the visible cursor. Out-of-window speech cannot finish
 a rehearsal or fabricate assessed words. Red-test logs are retained in `build/`.
+
+## Streaming Regression Repair
+
+The user's physical-iPhone test of `573a4b4` failed: speech following was too
+sensitive, jumped on a single word, and blocked valid rereading. Earlier passing
+synthetic tests were not sufficient acceptance evidence. Replays reproduced a
+continuous partial freezing at word 39 of an 80-word, four-paragraph script, plus
+old transcript context authorizing a jump from only one new word.
+
+The repair moves the bounds with the displayed matched position, evaluates the
+active segment's new/changed tokens, and holds position on recognition noise.
+Short fragments can follow adjacent words but cannot authorize a distant move.
+Distinctive exact short phrases can recover beyond the old 36-word local limit
+while remaining inside three previous sentences and the current/next paragraph.
+Audio times, not identity allocation order or maximum script position, order
+merged hypotheses and final confirmations. Earlier prefix finals do not revoke
+later matched audio; a correction of the active range can still retract a word.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Final core behavioral suite | 116 passed, 0 failed | `build/streaming-final-core.log` |
+| Full app/UI suite during repair | 46 passed, 0 failed, no runtime warnings | `build/Streaming-Final-App.xcresult` |
+| Final native suite after all confidence refinements | 37 passed, 0 failed, no runtime warnings | `build/Streaming-Complete-Native.xcresult` |
+| Signed generic iPhone Release | Build and strict signature verification succeeded | `build/streaming-signed-device.log` |
+
+The full UI run preceded the last confidence refinements; the final core/native
+runs include them. New tests cover the entire practice manuscript before any
+final result, distinct unfinalized chunks, one appended/replaced word, noisy
+revisions, valid three-word jumps, rereading two long sentences back, merged audio
+ranges, backward-reading confirmation, and immediate/delayed final orderings.
+Both cursor stability and final-only coverage are asserted. Regression red logs
+and result bundles remain in `build/`.
+
+These are controlled transcript replays, not a measured improvement in acoustic
+recognition, device latency, CPU usage, or real-microphone acceptance. The speech
+model was not replaced. No raw-speech logging or audio recording was added.
+The repaired app still needs a physical-iPhone retest before acceptance.
+The local signed test bundle uses Build 3 via a build-command override to
+distinguish it from the faulty Build 2; repository version metadata is unchanged.
+It has not been installed during this repair pass.

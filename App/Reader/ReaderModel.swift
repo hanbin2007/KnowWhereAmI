@@ -364,17 +364,17 @@ final class ReaderModel {
             var update: TrackingUpdate
             if chunk.isFinal, !chunk.text.isEmpty {
                 update = tracker.consume(buffer.finalizedText, isFinal: true, hypothesisID: buffer.finalizedHypothesisID,
-                                         segmentText: buffer.finalizedSegmentText)
+                                         segmentText: buffer.finalizedSegmentText, audioRange: buffer.finalizedSegmentAudioRange)
                 if mode == .rehearsal { rehearsal.recordFinal(text: chunk.text, evidence: update.evidence) }
                 if buffer.hasTentativeText {
                     update = tracker.consume(buffer.text, isFinal: false, hypothesisID: buffer.hypothesisID,
-                                             segmentText: buffer.segmentText)
+                                             segmentText: buffer.segmentText, audioRange: buffer.segmentAudioRange)
                 }
             } else if chunk.text.isEmpty, !buffer.hasTentativeText {
                 update = tracker.revokeTentative()
             } else {
                 update = tracker.consume(buffer.text, isFinal: false, hypothesisID: buffer.hypothesisID,
-                                         segmentText: buffer.segmentText)
+                                         segmentText: buffer.segmentText, audioRange: buffer.segmentAudioRange)
             }
             cursor = update.wordIndex
             confirmedCursor = update.confirmedWordIndex

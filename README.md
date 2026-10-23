@@ -36,11 +36,13 @@ preference are saved separately for each manuscript.
 
 Automatic following can move backward at most three sentences and forward only
 through the current paragraph and the next paragraph. English sentence and
-paragraph boundaries come from Apple's Natural Language tokenizer. Provisional
-results cannot repeatedly expand this search range; finalized speech advances
-it. Rejecting or revoking a result cannot snap the displayed position beyond
-these limits. Explicit word selection and Live paragraph rescue remain available
-to re-anchor anywhere deliberately.
+paragraph boundaries come from Apple's Natural Language tokenizer. This window
+follows the displayed matched position, including continuous provisional speech;
+it does not wait for final transcription. New audio must provide its own matching
+evidence: one common word cannot borrow a previous sentence's score to authorize
+a distant jump. Unmatched speech holds the last position, and older audio finals
+can update coverage without rewinding newer speech. Explicit word selection and
+Live paragraph rescue remain available to re-anchor anywhere deliberately.
 
 ## Rehearsal And Live
 

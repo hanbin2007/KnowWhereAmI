@@ -127,11 +127,11 @@ import Testing
     #expect(tracker.consume("go go", isFinal: true).wordIndex == 1)
 }
 
-@Test func nonmatchingReplacementRetractsUnevidencedTentativeCursor() {
+@Test func nonmatchingReplacementHoldsPositionWithoutInventingConfirmation() {
     var tracker = ScriptTracker(document: ScriptDocument(text: "We can create a better future together."))
     _ = tracker.consume("we can", isFinal: true)
     _ = tracker.consume("we can create a better", isFinal: false)
-    #expect(tracker.consume("purple umbrella banana", isFinal: false).wordIndex == 1)
+    #expect(tracker.consume("purple umbrella banana", isFinal: false).wordIndex == 4)
     #expect(tracker.consume("purple umbrella banana", isFinal: true).confirmedWordIndex == 1)
 }
 
@@ -204,9 +204,12 @@ import Testing
     #expect(tracker.consume(buffer.text, isFinal: true, hypothesisID: buffer.hypothesisID, segmentText: "go").wordIndex == 0)
 }
 
-@Test func fillerOnlyReplacementRetractsTentativeWords() {
+@Test func fillerOnlyReplacementHoldsTentativePositionWithoutFinalizingIt() {
     var tracker = ScriptTracker(document: ScriptDocument(text: "We can create a better future together."))
     _ = tracker.consume("we can", isFinal: true)
     _ = tracker.consume("we can create a better", isFinal: false)
-    #expect(tracker.consume("um", isFinal: true).wordIndex == 1)
+    let update = tracker.consume("um", isFinal: true)
+    #expect(update.wordIndex == 4)
+    #expect(update.confirmedWordIndex == 1)
+    #expect(update.evidence == nil)
 }

@@ -26,6 +26,10 @@ public struct TranscriptBuffer: Sendable {
     public var finalizedHypothesisID: UInt64? { chunks.last(where: \.chunk.isFinal)?.identity }
     public var segmentText: String? { chunks.last?.chunk.text }
     public var finalizedSegmentText: String? { chunks.last(where: \.chunk.isFinal)?.chunk.text }
+    public var segmentAudioRange: Range<Double>? { chunks.last.map { $0.chunk.start..<$0.chunk.end } }
+    public var finalizedSegmentAudioRange: Range<Double>? {
+        chunks.last(where: \.chunk.isFinal).map { $0.chunk.start..<$0.chunk.end }
+    }
 
     @discardableResult
     public mutating func ingest(_ chunk: SpeechChunk) -> Bool {

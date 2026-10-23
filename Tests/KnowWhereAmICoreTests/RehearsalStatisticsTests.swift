@@ -58,8 +58,9 @@ import Testing
     let document = ScriptDocument(text: "We can create a better future together.")
     var tracker = ScriptTracker(document: document)
     let result = tracker.consume("we can create a better", isFinal: true, hypothesisID: 0, segmentText: "we can create")
-    // The endpoint belongs to different audio, so it must not become coverage.
-    #expect(result.evidence == nil)
+    #expect(result.wordIndex == 2)
+    #expect(result.evidence?.matchedWordIndices == Set(0...2))
+    #expect(result.evidence?.assessedWordIndices == Set(0...2))
 }
 
 @Test func exceptionallyLongExactFinalDoesNotTurnItsEarlierWordsIntoOmissions() throws {

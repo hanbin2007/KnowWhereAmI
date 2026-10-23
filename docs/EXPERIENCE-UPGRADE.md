@@ -205,17 +205,28 @@ Every SwiftUI file holds one component, and no file exceeds 500 lines.
   paragraph. Apple Natural Language supplies English sentence/paragraph
   boundaries, including abbreviations and quoted sentences.
 - Apply the same bounds to local alignment, wider recovery, predicted anchors,
-  and cached hypotheses. Intersect the finalized/session anchor's bounds with
-  the currently displayed position's bounds so provisional updates cannot walk
-  the window across the manuscript or permit a large visible reversal.
-- Failed or revoked hypotheses restore confirmation only when that restoration
-  is in range. Otherwise retain the tentative position without inventing final
-  evidence. An earlier matched partial may still finalize its scoring, including
-  revised words, without pulling the visible cursor backward. These fences
-  constrain position endpoints, not the full final segment's historical coverage;
-  scoring must not invent omissions by truncating a real utterance.
+  and cached hypotheses. Use the displayed matched position, not the last final
+  result, so continuous provisional reading can advance across the manuscript.
+- Match the active audio segment, not accumulated old transcript context. Require
+  matching evidence among the newest spoken tokens. One or two new words cannot
+  authorize a distant move or a backward jump from a fresh audio segment. A
+  unique exact three-word phrase can recover beyond the short local word window,
+  but never beyond the sentence/paragraph bounds.
+- Failed recognition holds position without inventing final evidence. Explicit
+  revocation may restore confirmation only inside the visible bounds. Audio time
+  orders overlapping/merged hypotheses and confirmations; an older final can
+  score its own segment without rewinding newer speech or replacing a newer
+  backward-reading confirmation. These fences constrain position endpoints, not
+  the full final segment's historical coverage.
 - Manual word selection and explicit Live paragraph rescue are intentional
   re-anchors, not automatic jumps, and remain unrestricted by these bounds.
+
+The original final-anchored intersection was a regression: it could lock a reader
+inside the first two paragraphs until ASR finalized, while accumulated old words
+could overstate a new fragment's confidence. Streaming replay tests now cover
+continuous whole-script partials, fresh and growing one-word fragments, noisy
+revisions, skipped sentences, long-sentence rereading, merged audio ranges, and
+out-of-order finals. Cursor confidence and finalized scoring remain separate.
 
 ## Alignment Rules
 
