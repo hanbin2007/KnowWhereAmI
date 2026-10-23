@@ -6,12 +6,14 @@ Xcode 27. No third-party packages, account, analytics, or cloud transcription.
 
 ## Screenshots
 
-| Reader | Manuscript Library | Rehearsal Report |
-| --- | --- | --- |
-| <img src="Preview.png" width="240" alt="English script reader with a focused current word"> | <img src="Preview-Library.png" width="240" alt="Saved manuscript gallery"> | <img src="Preview-Report.png" width="240" alt="Visual rehearsal report with match ring and manuscript coverage map"> |
+| Reader | Rehearsing | Live | Rehearsal Report |
+| --- | --- | --- | --- |
+| <img src="Preview.png" width="200" alt="Manuscript in New York serif with the current word in a rounded highlight"> | <img src="Preview-Rehearsal.png" width="200" alt="Console with pace subdial, breathing microphone, and match ring"> | <img src="Preview-Live.png" width="200" alt="Live rescue dock with paragraph rail and locked reading position"> | <img src="Preview-Report.png" width="200" alt="Report with match ring, written verdict, and metric tiles"> |
 
-These are actual simulator screens. The report uses a controlled test transcript,
-not a live microphone or an acoustic benchmark.
+These are actual simulator screens captured by the `UI Screenshots` workflow
+(iOS 26.5 simulator, no microphone). Rehearsing and the report use a controlled
+test transcript, not a live microphone or an acoustic benchmark. The design
+language is described in `docs/EXPERIENCE-UPGRADE.md`.
 
 ## Run On iPhone
 
@@ -88,9 +90,10 @@ An unsigned device build checks compilation only; a simulator does not establish
 microphone/model accuracy, latency, thermal performance, or Bluetooth behavior.
 
 See `docs/VALIDATION.md` for the measured validation and remaining device checks.
-`Preview.png`, `Preview-Live.png`, and `Preview-Library.png` are actual simulator
-screens. `Preview-Rehearsal.png` and the report previews use a controlled test
-transcript, not a live microphone or an acoustic benchmark.
+The `UI Screenshots` GitHub workflow builds against the runner's Xcode 26.6 / iOS
+26.5 simulator with a no-capture speech stub, runs the app and UI suites in light
+appearance and the screenshot suites in dark, and uploads every screen as the
+`screenshots` artifact. `Preview*.png` come from that artifact.
 
 ## Current Limits
 

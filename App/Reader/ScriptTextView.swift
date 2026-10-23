@@ -13,6 +13,7 @@ struct ScriptTextView: UIViewRepresentable {
     let onManualScroll: () -> Void
     var onManualScrollEnd: (() -> Void)? = nil
     var allowsInteraction = true
+    var typeface = ReaderTypeface.sans
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -26,6 +27,7 @@ struct ScriptTextView: UIViewRepresentable {
         view.configure(document: document, cursor: cursor, tentative: isTentative,
                        pointSize: fontSize, dark: colorScheme == .dark,
                        typeSize: dynamicTypeSize, follows: followsPosition,
-                       recenter: recenterID, reducedMotion: reduceMotion, allowsInteraction: allowsInteraction)
+                       recenter: recenterID, reducedMotion: reduceMotion, allowsInteraction: allowsInteraction,
+                       serif: typeface == .serif)
     }
 }

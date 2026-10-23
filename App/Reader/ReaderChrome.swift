@@ -1,27 +1,14 @@
 import SwiftUI
 
 enum ReaderChrome {
-    static let buttonFill = Color(red: 0.055, green: 0.42, blue: 0.333)
-    static let motion = Animation.spring(response: 0.3, dampingFraction: 1)
-
     static func time(_ elapsed: Double) -> String {
         let seconds = Int(max(0, elapsed.isFinite ? elapsed : 0))
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }
 
-struct ReaderGlass: ViewModifier {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    func body(content: Content) -> some View {
-        if reduceTransparency {
-            content.background(Color(uiColor: .secondarySystemBackground), in: Capsule())
-                .overlay { Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5) }
-        } else {
-            content.glassEffect(.regular, in: .capsule)
-        }
-    }
-}
-
+/// Press feedback for content-layer buttons such as cards. Glass controls use
+/// interactive glass instead.
 struct ReaderControlStyle: ButtonStyle {
     var pressedScale: CGFloat = 0.94
     @Environment(\.accessibilityReduceMotion) private var reducedMotion

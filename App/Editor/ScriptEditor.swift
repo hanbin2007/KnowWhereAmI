@@ -14,6 +14,7 @@ struct ScriptEditor: View {
     @State private var confirmsDiscard = false
     @State private var previousDraft: Draft?
     @ScaledMetric(relativeTo: .body) private var editorSize = 19.0
+    @AppStorage(ReaderTypeface.storageKey) private var typeface = ReaderTypeface.serif
     @Environment(\.dismiss) private var dismiss
 
     init(model: ReaderModel, isNew: Bool = false) {
@@ -27,44 +28,60 @@ struct ScriptEditor: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                TextField("Untitled script", text: $title)
-                    .font(.title2.weight(.semibold))
-                    .accessibilityIdentifier("scriptTitleField")
-                    .padding(24)
-                if title.count > 80 {
-                    Text("Title must be 80 characters or fewer.")
-                        .font(.caption).foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 24).padding(.bottom, 12)
-                }
-                Divider().padding(.horizontal, 24)
-                TextEditor(text: $text)
-                    .font(.system(size: editorSize))
-                    .scrollContentBackground(.hidden)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .accessibilityLabel("Script text")
-                    .accessibilityIdentifier("scriptBodyField")
-                HStack {
-                    Text("\(ScriptDocument.wordCount(in: text)) words")
-                    Spacer()
-                    if text.utf16.count > ScriptStore.maximumTextLength {
-                        Text("Script is too long").foregroundStyle(.red)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Untitled script", text: $title)
+                        .font(.display(.title, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                        .submitLabel(.done)
+                        .accessibilityIdentifier("scriptTitleField")
+                    HStack(spacing: 8) {
+                        Text(ReadingLength.summary(words: wordCount))
+                            .contentTransition(.numericText(value: Double(wordCount)))
+                        if title.count > 80 {
+                            notice("Title over 80 characters")
+                        } else if text.utf16.count > ScriptStore.maximumTextLength {
+                            notice("Script is too long")
+                        }
                     }
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .calmAnimation(Motion.snappy, value: wordCount)
                 }
-                .font(.caption).foregroundStyle(.secondary)
-                .padding(.horizontal, 24).padding(.vertical, 12)
+                .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 14)
+                Rectangle().fill(Theme.hairline).frame(height: 0.75).padding(.horizontal, 24)
+                    .accessibilityHidden(true)
+                ZStack(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text("Start with the first sentence you\u{2019}ll say\u{2026}")
+                            .font(.system(size: editorSize, design: typeface.design)).italic()
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, 23).padding(.top, 20)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                    TextEditor(text: $text)
+                        .font(.system(size: editorSize, design: typeface.design))
+                        .foregroundStyle(Theme.ink)
+                        .lineSpacing(6)
+                        .scrollContentBackground(.hidden)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .accessibilityLabel("Script text")
+                        .accessibilityIdentifier("scriptBodyField")
+                }
             }
+            .background(Theme.paper)
             .navigationTitle(isNew ? "New script" : "Edit script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button("Cancel", systemImage: "xmark", role: .cancel) {
                         if isDirty { confirmsDiscard = true } else { dismiss() }
-                    }.accessibilityIdentifier("cancelEditor")
+                    }
+                    .accessibilityIdentifier("cancelEditor")
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         if previousDraft != nil {
                             Button("Undo replacement", systemImage: "arrow.uturn.backward") {
@@ -83,18 +100,19 @@ struct ScriptEditor: View {
                         Button("Clear text", systemImage: "trash", role: .destructive) { replaceDraft(title: title, text: "") }
                             .accessibilityIdentifier("clearDraft")
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "ellipsis")
                     }
                     .accessibilityLabel("Script actions")
                     .accessibilityIdentifier("editorActions")
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save", systemImage: "checkmark") {
                         let saved = isNew ? model.createScript(title: title, text: text) : model.saveScript(title: title, text: text)
                         if saved { dismiss() }
                         else { importError = model.alert?.message; model.alert = nil }
                     }
-                    .fontWeight(.semibold)
+                    .buttonStyle(.glassProminent)
                     .accessibilityIdentifier("saveScript")
                     .disabled(title.count > 80 || text.utf16.count > ScriptStore.maximumTextLength)
                 }
@@ -126,6 +144,14 @@ struct ScriptEditor: View {
     }
 
     private var isDirty: Bool { text != initialText || title != initialTitle }
+    private var wordCount: Int { ScriptDocument.wordCount(in: text) }
+
+    private func notice(_ message: String) -> some View {
+        Label(message, systemImage: "exclamationmark.circle.fill")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(Theme.missed)
+            .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
+    }
 
     private func replaceDraft(title: String, text: String) {
         previousDraft = Draft(title: self.title, text: self.text)
