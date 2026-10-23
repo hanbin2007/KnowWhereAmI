@@ -67,6 +67,21 @@ old transcript history and future provisional audio cannot confirm a jump.
   position lock. A live paragraph/word rescue can re-anchor and resume an already
   listening session. Explicit pause, backgrounding, or external audio interruption
   cancels any pending resume. Live mode does not create rehearsal records.
+- The Live countdown defaults to **3 minutes**. The timer button offers presets
+  and 15-second adjustments from 30 seconds to 60 minutes, saved per manuscript.
+  It starts when the microphone actually begins listening, or manually from the
+  timer sheet without starting the microphone. Pausing the microphone or
+  backgrounding does **not** pause an event's deadline. Changing the limit keeps
+  elapsed time; restarting the countdown requires confirmation. Restarting the
+  reader or choosing another manuscript resets the clock. The active countdown
+  is in memory, not restored after a force-quit or crash.
+- Live shows a large countdown, time-budget bar, estimated reading time, and
+  spare/short time. The estimate uses recognized words in the trailing 30 seconds
+  (including pauses), not cursor jumps. It waits for at least 5 words and
+  5 seconds, and suspends the forecast while the microphone is paused or the
+  reading position is uncertain. Amber marks a tight/late predicted finish or
+  the final 30 seconds; red and a `+` clock mark actual overtime. This is an
+  approximate pacing aid, not a guarantee of finishing on time.
 - The library supports search, create, edit, duplicate, delete, persistent
   selection, and rehearsal history. Old single-script data migrates without
   deleting the original file. The editor protects unsaved changes and provides
@@ -93,7 +108,7 @@ old transcript history and future provisional audio cannot confirm a jump.
 - `App/`: reader, transactional editor, settings, speech capture, and app state.
 - `Sources/KnowWhereAmICore/`: token ranges, English normalization, sequence
   alignment, bounded audio-hypothesis history, transcript replacement, import,
-  and atomic persistence.
+  live deadline/pace estimation, and atomic persistence.
 - `Tests/`: core behavioral tests without microphone capture.
 - `AppTests/`: lifecycle and pipeline tests with a controlled speech boundary.
 - `UITests/`: actual simulator workflows and screenshot attachments.
@@ -125,4 +140,5 @@ The manuscript limit is 100,000 UTF-16 code units. No PDF/DOCX parsing, audio
 recording, cloud sync, or cloud transcription fallback is included. Repeated
 readings contribute to WPM; script coverage counts each original word once and
 can improve when an omitted word is reread. Silence while listening is included
-in active duration. Only explicit pause excludes time.
+in rehearsal active duration. Explicit microphone pause excludes rehearsal
+time, but the Live event countdown keeps running.

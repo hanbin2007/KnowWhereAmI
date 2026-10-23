@@ -160,6 +160,32 @@ final class ReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["finishRehearsal"].exists)
     }
 
+    func testLiveTimerCanBeConfiguredAndStartedWithoutTheMicrophone() {
+        let app = launch()
+        app.buttons["Live"].tap()
+        let countdown = app.staticTexts["liveCountdown"]
+        XCTAssertTrue(countdown.waitForExistence(timeout: 3))
+        XCTAssertEqual(countdown.label, "Time limit")
+        XCTAssertGreaterThan(countdown.frame.height, 40)
+        app.buttons["liveTimeSettings"].tap()
+        XCTAssertTrue(app.steppers["liveTimeLimitStepper"].waitForExistence(timeout: 3))
+        app.buttons["liveDurationPreset"].tap()
+        app.buttons["5 min"].tap()
+        XCTAssertEqual(app.staticTexts["liveTimeLimitValue"].label, "5:00")
+        attachScreenshot(app, name: "Live timer settings")
+        app.buttons["startLiveCountdown"].tap()
+        XCTAssertTrue(app.buttons["toggleListening"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.buttons["toggleListening"].label, "Start listening")
+        XCTAssertEqual(app.staticTexts["readerStatus"].label, "Ready")
+        let ticking = expectation(for: NSPredicate(format: "value != %@", "5 minutes, 0 seconds"), evaluatedWith: countdown)
+        wait(for: [ticking], timeout: 4)
+        attachScreenshot(app, name: "Live countdown started without microphone")
+        app.terminate()
+        app.launch()
+        app.buttons["Live"].tap()
+        XCTAssertEqual(app.staticTexts["liveCountdown"].value as? String, "5 minutes, 0 seconds")
+    }
+
     func testDraftReplacementCanBeUndone() {
         let app = launch()
         app.buttons["editScript"].tap()

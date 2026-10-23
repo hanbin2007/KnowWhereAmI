@@ -3,10 +3,11 @@ import SwiftUI
 /// The glass panel: mode picker, status, and the mode's read-outs.
 struct ConsolePanel: View {
     let model: ReaderModel
+    var compactLive = false
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: compactLive ? 8 : 14) {
             Picker("Reading mode", selection: Binding(get: { model.mode }, set: { mode in
                 withAnimation(reducedMotion ? nil : Motion.morph) { model.setMode(mode) }
             })) {
@@ -28,11 +29,10 @@ struct ConsolePanel: View {
             if model.mode == .rehearsal {
                 RehearsalReadouts(model: model).transition(.blurReplace)
             } else {
-                ParagraphRail(starts: model.paragraphStarts, wordCount: model.document.words.count, cursor: model.cursor)
-                    .padding(.vertical, 4)
+                LiveTimingReadout(model: model, compact: compactLive)
                     .transition(.blurReplace)
             }
         }
-        .padding(18)
+        .padding(compactLive ? 12 : 18)
     }
 }

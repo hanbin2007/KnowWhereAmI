@@ -7,6 +7,7 @@ enum SpeechEvent: Sendable {
     case preparing
     case downloading(Double)
     case listening
+    case audioStarted(time: Double, observedAt: ContinuousClock.Instant, duration: Double)
     case transcript(SpeechChunk)
 }
 
@@ -85,10 +86,22 @@ actor OnDeviceSpeechService: SpeechRecognizing {
             let (inputs, continuation) = AsyncThrowingStream<AnalyzerInput, Error>.makeStream(bufferingPolicy: .bufferingOldest(128))
             inputContinuation = continuation
             let source = capture.analyzerInputs
+            try await analyzer.start(inputSequence: inputs)
+            try checkActive(id)
+            capture.captureSession.startRunning()
+            guard capture.captureSession.isRunning else { throw SpeechServiceError.captureFailed }
+            await onEvent(.listening)
+            try checkActive(id)
             inputTask = Task {
                 do {
+                    var firstInput = true
                     for try await input in source {
                         try Task.checkCancellation()
+                        if firstInput {
+                            firstInput = false
+                            await onEvent(.audioStarted(time: input.bufferStartTime?.seconds ?? 0,
+                                                       observedAt: .now, duration: input.bufferDuration.seconds))
+                        }
                         switch continuation.yield(input) {
                         case .enqueued: break
                         case .dropped: continuation.finish(throwing: SpeechServiceError.audioBacklog); return
@@ -99,21 +112,11 @@ actor OnDeviceSpeechService: SpeechRecognizing {
                     continuation.finish()
                 } catch { continuation.finish(throwing: error) }
             }
-            try await analyzer.start(inputSequence: inputs)
-            try checkActive(id)
-            capture.captureSession.startRunning()
-            guard capture.captureSession.isRunning else { throw SpeechServiceError.captureFailed }
-            await onEvent(.listening)
-
             let results = Task {
                 for try await result in transcriber.results {
                     try checkActive(id)
-                    await onEvent(.transcript(SpeechChunk(
-                        start: result.range.start.seconds,
-                        end: result.range.end.seconds,
-                        text: String(result.text.characters),
-                        isFinal: result.isFinal
-                    )))
+                    await onEvent(.transcript(SpeechChunkBuilder.make(text: result.text, range: result.range,
+                                                                     isFinal: result.isFinal)))
                 }
             }
             resultTask = results

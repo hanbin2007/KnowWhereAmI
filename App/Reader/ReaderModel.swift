@@ -46,6 +46,7 @@ final class ReaderModel {
     private(set) var mode = ReaderMode.rehearsal
     private(set) var cursor: Int?
     private(set) var confirmedCursor: Int?
+    private(set) var cursorIsSelection = false
     private(set) var heard = ""
     private(set) var isFindingPosition = false
     var followsPosition = true
@@ -54,6 +55,7 @@ final class ReaderModel {
     var alert: ReaderAlert?
     var presentedReport: RehearsalRecord?
     private let rehearsal: RehearsalSession
+    let liveSession: LiveSession
 
     @ObservationIgnored private var tracker: ScriptTracker
     @ObservationIgnored private var buffer = TranscriptBuffer()
@@ -93,6 +95,7 @@ final class ReaderModel {
         followsPosition = initial.selected?.content.followsPosition ?? true
         rehearsal = RehearsalSession(document: document,
             store: RehearsalHistoryStore(url: legacyURL.deletingPathExtension().appendingPathExtension("rehearsals.json")), now: now)
+        liveSession = LiveSession(limitSeconds: initial.selected?.content.liveTimeLimitSeconds ?? 180, now: now)
         if let failure {
             alert = ReaderAlert(title: "Couldn't open saved scripts", message: "Your original files were left unchanged. \(failure)")
         } else if let error = rehearsal.loadError {
@@ -110,6 +113,7 @@ final class ReaderModel {
     var progress: Double { document.words.isEmpty ? 0 : Double(position) / Double(document.words.count) }
     var isTentative: Bool { cursor != nil && cursor != confirmedCursor }
     var statusTitle: String {
+        if phase == .paused, mode == .live { return "Mic paused" }
         if phase == .listening, isFindingPosition { return "Finding position" }
         if phase == .listening, mode == .live, position == document.words.count { return "At end" }
         return phase.title
@@ -138,12 +142,14 @@ final class ReaderModel {
                 try await speech.run { [weak self] event in await self?.receive(event, generation: id) }
                 guard let self, self.generation == id, self.phase != .finishing else { return }
                 self.rehearsal.pause()
+                self.liveSession.endSpeech()
                 self.phase = .paused
             } catch is CancellationError {
                 // The explicit stop path owns the next visible state.
             } catch {
                 guard let self, self.generation == id, self.phase != .finishing else { return }
                 self.rehearsal.pause()
+                self.liveSession.endSpeech()
                 self.phase = .paused
                 self.alert = ReaderAlert(title: "Couldn't listen", message: error.localizedDescription,
                     offersSettings: (error as? SpeechServiceError) == .microphoneDenied)
@@ -164,6 +170,7 @@ final class ReaderModel {
         guard archiveRehearsal() else { return }
         stop(next: .ready)
         rehearsal.reset(document: document)
+        liveSession.reset(limitSeconds: saved.liveTimeLimitSeconds)
         clearPosition()
     }
 
@@ -187,6 +194,7 @@ final class ReaderModel {
         if mode == .rehearsal { rehearsal.setAnchor(index) }
         cursor = index
         confirmedCursor = index
+        cursorIsSelection = true
         buffer.reset()
         heard = ""
         isFindingPosition = false
@@ -278,9 +286,12 @@ final class ReaderModel {
 
     func commitLibrary(_ next: ScriptLibrary, reloadSelection: Bool = false) -> Bool {
         do {
+            let previousSelection = library.selectedID
             if let libraryLoadError { throw SessionStorageError.unavailable(libraryLoadError) }
             try libraryStore.save(next)
             library = next
+            if previousSelection != next.selectedID { liveSession.reset(limitSeconds: saved.liveTimeLimitSeconds) }
+            else { liveSession.setLimit(saved.liveTimeLimitSeconds) }
             if reloadSelection {
                 stop(next: .ready)
                 document = ScriptDocument(text: saved.text)
@@ -314,6 +325,7 @@ final class ReaderModel {
         buffer.reset()
         cursor = nil
         confirmedCursor = nil
+        cursorIsSelection = false
         heard = ""
         isFindingPosition = false
         recenter()
@@ -323,6 +335,7 @@ final class ReaderModel {
 
     private func stop(next: ReaderPhase) {
         rehearsal.pause()
+        liveSession.endSpeech()
         nextStoppedPhase = next
         guard phase.isActive || phase == .finishing else {
             if phase != .stopping { phase = next }
@@ -358,8 +371,12 @@ final class ReaderModel {
             guard phase != .finishing else { return }
             phase = .listening
             if mode == .rehearsal, let manuscript = library.selected { rehearsal.resume(manuscript: manuscript) }
+            if mode == .live { liveSession.beginSpeech() }
+        case .audioStarted(let time, let instant, let duration):
+            if mode == .live { liveSession.alignAudio(startingAt: time, observedAt: instant, duration: duration) }
         case .transcript(let chunk):
             guard phase == .listening || phase == .finishing, buffer.ingest(chunk) else { return }
+            if mode == .live { liveSession.record(chunk) }
             heard = String(buffer.text.suffix(240))
             var update: TrackingUpdate
             if chunk.isFinal, !chunk.text.isEmpty {
@@ -378,6 +395,7 @@ final class ReaderModel {
             }
             cursor = update.wordIndex
             confirmedCursor = update.confirmedWordIndex
+            if update.isMatched { cursorIsSelection = false }
             isFindingPosition = !update.isMatched && !chunk.text.isEmpty
             if update.isFinished, mode == .rehearsal, phase != .finishing { finishRehearsal() }
         }

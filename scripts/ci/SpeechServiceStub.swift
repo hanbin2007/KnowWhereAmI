@@ -8,6 +8,7 @@ enum SpeechEvent: Sendable {
     case preparing
     case downloading(Double)
     case listening
+    case audioStarted(time: Double, observedAt: ContinuousClock.Instant, duration: Double)
     case transcript(SpeechChunk)
 }
 

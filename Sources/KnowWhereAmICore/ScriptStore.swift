@@ -5,15 +5,18 @@ public struct SavedReaderState: Codable, Equatable, Sendable {
     public var text: String
     public var fontSize: Double
     public var followsPosition: Bool
+    public var liveTimeLimitSeconds: Int
 
-    public init(title: String, text: String, fontSize: Double = 26, followsPosition: Bool = true) {
+    public init(title: String, text: String, fontSize: Double = 26, followsPosition: Bool = true,
+                liveTimeLimitSeconds: Int = 180) {
         self.title = title
         self.text = text
         self.fontSize = fontSize
         self.followsPosition = followsPosition
+        self.liveTimeLimitSeconds = liveTimeLimitSeconds
     }
 
-    private enum CodingKeys: String, CodingKey { case title, text, fontSize, followsPosition }
+    private enum CodingKeys: String, CodingKey { case title, text, fontSize, followsPosition, liveTimeLimitSeconds }
 
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -21,6 +24,7 @@ public struct SavedReaderState: Codable, Equatable, Sendable {
         text = try values.decode(String.self, forKey: .text)
         fontSize = try values.decode(Double.self, forKey: .fontSize)
         followsPosition = try values.decodeIfPresent(Bool.self, forKey: .followsPosition) ?? true
+        liveTimeLimitSeconds = try values.decodeIfPresent(Int.self, forKey: .liveTimeLimitSeconds) ?? 180
     }
 }
 
@@ -45,19 +49,21 @@ public struct ScriptStore: Sendable {
 
     static func validate(_ state: SavedReaderState) throws {
         guard state.fontSize.isFinite, (18...40).contains(state.fontSize) else { throw ScriptStorageError.invalidTextSize }
+        guard LiveTimingSession.allowedLimits.contains(state.liveTimeLimitSeconds) else { throw ScriptStorageError.invalidLiveTimeLimit }
         guard state.title.count <= 80 else { throw ScriptStorageError.titleTooLong }
         guard state.text.utf16.count <= Self.maximumTextLength else { throw ScriptStorageError.scriptTooLong }
     }
 }
 
 public enum ScriptStorageError: LocalizedError {
-    case invalidTextSize, titleTooLong, scriptTooLong
+    case invalidTextSize, titleTooLong, scriptTooLong, invalidLiveTimeLimit
 
     public var errorDescription: String? {
         switch self {
         case .invalidTextSize: "Text size must be between 18 and 40 points."
         case .titleTooLong: "The title must be 80 characters or fewer."
         case .scriptTooLong: "The script must be 100,000 characters or fewer."
+        case .invalidLiveTimeLimit: "The live time limit must be between 30 seconds and 60 minutes."
         }
     }
 }

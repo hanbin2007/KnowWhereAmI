@@ -11,6 +11,7 @@ struct ReaderView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var chromeInsets = EdgeInsets()
     @State private var consoleHeight: CGFloat = 0
+    @State private var stageSize = CGSize.zero
     @Namespace private var sheets
 
     init(model: ReaderModel = ReaderModel()) { _model = State(initialValue: model) }
@@ -39,8 +40,9 @@ struct ReaderView: View {
             }
         }
         .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { chromeInsets = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { stageSize = $0 }
         .overlay(alignment: .bottom) {
-            ReaderTransport(model: model)
+            ReaderTransport(model: model, compactLive: model.mode == .live && stageSize.height > 0 && stageSize.height < 600)
                 .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { consoleHeight = $0 }
         }

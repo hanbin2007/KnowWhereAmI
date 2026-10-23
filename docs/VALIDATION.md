@@ -183,3 +183,59 @@ provisional recovery does not become finalized coverage or finish a rehearsal.
 No speech/audio recording or additional model download was added. Build 4 was
 prepared, not installed, in this pass. Real-microphone retesting and measured
 device latency/accuracy remain acceptance gaps, not established improvements.
+
+## Live Deadline And Pace: 2026-10-23
+
+Live now has a prominent three-minute countdown, per-manuscript duration
+presets and 15-second adjustments (30 seconds through 60 minutes), a remaining
+budget bar, estimated reading time, and spare/short time. Countdown controls
+never start the microphone. First actual listening starts an unstarted clock;
+microphone pauses, backgrounding, and mode changes do not stop the event
+deadline. Limit changes preserve elapsed time. Countdown restart preserves
+recent pace; explicit reader restart or a different manuscript resets the run.
+Only the duration preference is stored; an active deadline is not crash recovery.
+
+Pace uses actual recognized words over the trailing 30 seconds, including
+silence. Word audio ranges are retained when complete; otherwise a chunk's words
+are distributed over its audio interval. Revisions replace overlapping samples
+without double counting, and earlier finals preserve later provisional audio.
+The first capture input calibrates the audio timeline to the monotonic clock,
+not recognition-result delivery time. Manual rescue changes remaining script
+words but cannot invent speech speed. Forecasts wait for 5 words/5 seconds and
+are withheld for uncertain position or a paused microphone. WPM is capped at
+360 to avoid implausibly optimistic estimates from short recognition bursts.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Core behavioral suite | 152 passed, 0 failed | `build/live-timing-core-final-confirmed.log` |
+| Focused timer model/layout/UI suite | 12 passed, 0 failed, no runtime warnings | `build/Live-Timing-Focused.xcresult` |
+| Full app/UI regression suite | 62 passed, 0 failed, no runtime warnings | `build/Live-Timing-Final-App.xcresult` |
+| Final timer settings/ticking UI rerun | 1 passed, 0 failed | `build/Live-Timing-Final-Interaction.xcresult` |
+| Signed iPhone Release, local Build 5 | Build and strict signature verification succeeded | `build/live-timing-signed-device-final.log` |
+
+Regression checks cover legacy duration migration, invalid stored values,
+transactional preference updates, pause/background-equivalent elapsed time,
+manual start without capture, clock reset boundaries, resumed audio sessions,
+host-time input, delayed recognition, word-level revisions, and unknown position.
+Screenshots cover on-track/behind/overtime, light/dark, 320-point compact
+geometry, and an AX5 environment with the existing AX2 console cap. The timer's
+forecast reflows below its clock at accessibility sizes. Simulated wide geometry
+does not add landscape support; this remains a portrait iPhone application.
+Rendered ETA/detail contrast was reviewed in both appearances. Final VoiceOver
+interaction and physical-device readability still require user acceptance.
+The final UI rerun includes the last duration-value contrast adjustment and
+asserts that the on-screen countdown advances without starting the microphone.
+
+These are controlled text/audio-time events, not live microphone recordings.
+Build 5 is prepared, not installed. Real capture-clock calibration, acoustic
+recognition, forecast responsiveness to real speed changes/silence, and the
+existing automatic jump limits still need a physical-iPhone retest. No tracking
+scoring rules or jump bounds changed for this feature. No audio retention,
+network transcription, or extra model download was added.
+
+Device acceptance: use a real manuscript with the 3-minute default, read at
+different speeds, pause for 10 seconds, and verify the deadline keeps counting
+while ETA is withheld. Resume and compare the estimate after new speech. Set a
+shorter limit to exercise Behind pace and overtime, adjust it without resetting
+elapsed time, and test explicit countdown restart. Confirm paragraph rescue does
+not spike WPM and uncertain tracking does not promise an on-time finish.

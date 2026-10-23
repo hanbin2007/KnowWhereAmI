@@ -5,12 +5,26 @@ public struct SpeechChunk: Equatable, Sendable {
     public let end: Double
     public let text: String
     public let isFinal: Bool
+    public let wordTimings: [SpeechWordTiming]
 
-    public init(start: Double, end: Double, text: String, isFinal: Bool) {
+    public init(start: Double, end: Double, text: String, isFinal: Bool, wordTimings: [SpeechWordTiming] = []) {
         self.start = start
         self.end = end
         self.text = text
         self.isFinal = isFinal
+        self.wordTimings = wordTimings
+    }
+}
+
+public struct SpeechWordTiming: Equatable, Sendable {
+    public let start: Double
+    public let end: Double
+    public let wordCount: Int
+
+    public init(start: Double, end: Double, wordCount: Int = 1) {
+        self.start = start
+        self.end = end
+        self.wordCount = wordCount
     }
 }
 

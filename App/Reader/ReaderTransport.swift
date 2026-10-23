@@ -6,6 +6,7 @@ import SwiftUI
 /// keeps scrolling beneath, softened by the system scroll edge effect.
 struct ReaderTransport: View {
     let model: ReaderModel
+    var compactLive = false
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @Namespace private var glass
     @State private var cueFeedback = 0
@@ -16,7 +17,7 @@ struct ReaderTransport: View {
     var body: some View {
         GlassEffectContainer(spacing: 14) {
             VStack(spacing: 12) {
-                ConsolePanel(model: model)
+                ConsolePanel(model: model, compactLive: compactLive)
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Self.panelRadius, style: .continuous))
                     .glassEffectID("panel", in: glass)
                 if model.mode == .rehearsal {
