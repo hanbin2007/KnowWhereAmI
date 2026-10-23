@@ -141,10 +141,7 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window == nil { driver.cancel() } else {
-            setNeedsLayout()
-            NotificationCenter.default.post(name: .readerSurfaceDidAppear, object: self)
-        }
+        if window == nil { driver.cancel() } else { setNeedsLayout() }
     }
 
     private func paintProgress() {
@@ -172,9 +169,10 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         rect.origin.x += textContainerInset.left
         rect.origin.y += textContainerInset.top
         rect = rect.insetBy(dx: -5, dy: -1)
-        let color: UIColor = tentative ? .dynamic(light: 0xE9B44C, dark: 0xF0B653) : tintColor
+        let accent = UIColor(named: "AccentColor") ?? tintColor!
+        let color: UIColor = tentative ? .dynamic(light: 0xE9B44C, dark: 0xF0B653) : accent
         highlight.backgroundColor = color.withAlphaComponent(dark ? 0.24 : 0.15)
-        underline.backgroundColor = tentative ? .dynamic(light: 0xB7791A, dark: 0xF0B653) : tintColor
+        underline.backgroundColor = tentative ? .dynamic(light: 0xB7791A, dark: 0xF0B653) : accent
         guard rect != highlightFrame else { return }
         let sameLine = !highlightFrame.isNull && abs(rect.midY - highlightFrame.midY) < rect.height / 2
         let underlineFrame = CGRect(x: 5, y: rect.height - 2.5, width: max(0, rect.width - 10), height: 2.5)

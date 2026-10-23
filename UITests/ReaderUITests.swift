@@ -25,7 +25,7 @@ final class ReaderUITests: XCTestCase {
         body.tap()
         body.typeText("Hello everyone. Today we create a better future together.")
         app.buttons["saveScript"].tap()
-        XCTAssertTrue(app.staticTexts["My presentation"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForTitle(app, "My presentation", timeout: 3))
         XCTAssertTrue(app.textViews["scriptReader"].exists)
         edit.tap()
         XCTAssertEqual(app.textViews["scriptBodyField"].value as? String, "Hello everyone. Today we create a better future together.")
@@ -38,7 +38,7 @@ final class ReaderUITests: XCTestCase {
         app.buttons["cancelEditor"].tap()
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.staticTexts["My presentation"].waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForTitle(app, "My presentation", timeout: 5))
         attachScreenshot(app, name: "Saved reader")
     }
 
@@ -110,16 +110,17 @@ final class ReaderUITests: XCTestCase {
         app.textViews["scriptBodyField"].tap()
         app.textViews["scriptBodyField"].typeText("A separate manuscript stays separate.\n\nA closing paragraph.")
         app.buttons["saveScript"].tap()
-        XCTAssertTrue(app.staticTexts["Second talk"].waitForExistence(timeout: 4))
+        XCTAssertTrue(waitForTitle(app, "Second talk", timeout: 4))
         app.buttons["scriptLibrary"].tap()
         XCTAssertTrue(app.staticTexts["Practice script"].waitForExistence(timeout: 3))
         attachScreenshot(app, name: "Multiple manuscripts")
-        app.staticTexts["Practice script"].tap()
-        let practiceSummary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "144 words")).firstMatch
-        XCTAssertTrue(practiceSummary.waitForExistence(timeout: 3))
+        manuscriptCard(app, "Practice script").tap()
+        let practiceLoaded = expectation(for: NSPredicate(format: "label ENDSWITH %@", "of 144 words"),
+                                         evaluatedWith: app.staticTexts["readerPosition"])
+        wait(for: [practiceLoaded], timeout: 3)
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.staticTexts["Practice script"].waitForExistence(timeout: 4))
+        XCTAssertTrue(waitForTitle(app, "Practice script", timeout: 4))
         app.buttons["scriptLibrary"].tap()
         app.buttons["Actions for Second talk"].tap()
         app.buttons["Duplicate"].tap()
@@ -130,10 +131,10 @@ final class ReaderUITests: XCTestCase {
         let removed = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Second talk"])
         wait(for: [removed], timeout: 3)
         app.buttons["closeLibrary"].tap()
-        XCTAssertTrue(app.staticTexts["Second talk copy"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForTitle(app, "Second talk copy", timeout: 3))
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.staticTexts["Second talk copy"].waitForExistence(timeout: 4))
+        XCTAssertTrue(waitForTitle(app, "Second talk copy", timeout: 4))
     }
 
     func testLiveModeKeepsRescueControlsAvailableWhilePositionIsLocked() {
@@ -171,6 +172,22 @@ final class ReaderUITests: XCTestCase {
         XCTAssertEqual(app.textViews["scriptBodyField"].value as? String, original)
         app.buttons["cancelEditor"].tap()
         XCTAssertTrue(app.textViews["scriptReader"].waitForExistence(timeout: 3))
+    }
+
+    /// The script title lives in the navigation bar, as the bar's identifier or its title label.
+    private func waitForTitle(_ app: XCUIApplication, _ title: String, timeout: TimeInterval) -> Bool {
+        let match = NSPredicate(format: "identifier == %@ OR label == %@", title, title)
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if app.navigationBars.matching(match).firstMatch.exists
+                || app.navigationBars.staticTexts.matching(match).firstMatch.exists { return true }
+            Thread.sleep(forTimeInterval: 0.2)
+        } while Date() < deadline
+        return false
+    }
+
+    private func manuscriptCard(_ app: XCUIApplication, _ title: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "manuscript-", title)).firstMatch
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {

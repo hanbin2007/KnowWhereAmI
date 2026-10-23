@@ -9,6 +9,8 @@ struct ReaderView: View {
     @State private var editAfterLibrary: Bool?
     @AppStorage(ReaderTypeface.storageKey) private var typeface = ReaderTypeface.serif
     @Environment(\.scenePhase) private var scenePhase
+    @State private var chromeInsets = EdgeInsets()
+    @State private var consoleHeight: CGFloat = 0
     @Namespace private var sheets
 
     init(model: ReaderModel = ReaderModel()) { _model = State(initialValue: model) }
@@ -17,7 +19,7 @@ struct ReaderView: View {
         NavigationStack {
             withLifecycle(withSheets(stage))
         }
-        .tint(.accentColor)
+        .tint(Theme.accent)
     }
 
     private var stage: some View {
@@ -28,25 +30,24 @@ struct ReaderView: View {
                     .padding(.bottom, 200)
                     .transition(.opacity.combined(with: .scale(scale: 0.97)))
             } else {
-                // The manuscript runs under the glass bars; the scroll edge
-                // effect keeps those bars legible.
-                manuscript.ignoresSafeArea().transition(.opacity)
+                // The manuscript runs under the glass bars and dissolves just
+                // before them, like the system soft scroll edge effect.
+                manuscript
+                    .mask { ManuscriptEdgeFade(insets: chromeInsets, console: consoleHeight) }
+                    .ignoresSafeArea()
+                    .transition(.opacity)
             }
         }
-        .overlay(alignment: .top) {
-            GeometryReader { geometry in
-                ScrollEdgeAnchor(edge: .top).frame(height: geometry.safeAreaInsets.top)
-            }
-            .ignoresSafeArea(edges: .top)
-            .allowsHitTesting(false).accessibilityHidden(true)
-        }
+        .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { chromeInsets = $0 }
         .overlay(alignment: .bottom) {
-            ReaderTransport(model: model).dynamicTypeSize(...DynamicTypeSize.accessibility2)
+            ReaderTransport(model: model)
+                .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { consoleHeight = $0 }
         }
         .calmAnimation(Motion.gentle, value: model.document.words.isEmpty)
         .navigationTitle(model.saved.title)
         .navigationSubtitle(ReadingLength.summary(words: model.document.words.count))
-        .toolbarTitleDisplayMode(.inlineLarge)
+        .toolbarTitleDisplayMode(.inline)
         .toolbar { toolbar }
     }
 

@@ -7,7 +7,8 @@ enum Theme {
     static let sheet = Color(uiColor: .dynamic(light: 0xFFFDF8, dark: 0x181D1B))
     static let raised = Color(uiColor: .dynamic(light: 0xEFEBE3, dark: 0x222826))
     static let ink = Color(uiColor: .ink)
-    static let accent = Color.accentColor
+    /// The asset is referenced by name so the tint never falls back to system blue.
+    static let accent = Color("AccentColor")
     static let amber = Color(uiColor: .dynamic(light: 0xB7791A, dark: 0xF0B653))
     static let missed = Color(uiColor: .dynamic(light: 0xBE4A2C, dark: 0xF07D5E))
     static let onAir = Color(uiColor: .dynamic(light: 0xD23B2F, dark: 0xFF6158))

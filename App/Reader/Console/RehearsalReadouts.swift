@@ -11,7 +11,7 @@ struct RehearsalReadouts: View {
         TimelineView(.animation(minimumInterval: 1, paused: model.phase != .listening)) { _ in
             let stats = model.statistics
             HStack(spacing: 14) {
-                readout(title: "Pace", detail: stats.wordsPerMinute.map { PaceBand(wordsPerMinute: $0).title } ?? "Waiting for speech") {
+                readout(title: "Pace", detail: stats.wordsPerMinute.map { PaceBand(wordsPerMinute: $0).title } ?? "Waiting") {
                     PaceDial(wordsPerMinute: stats.wordsPerMinute, diameter: dial)
                 }
                 .accessibilityElement(children: .ignore)
@@ -34,7 +34,7 @@ struct RehearsalReadouts: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 Text(detail).font(.subheadline.weight(.semibold))
-                    .lineLimit(2).minimumScaleFactor(0.75)
+                    .lineLimit(1).minimumScaleFactor(0.65)
                     .contentTransition(.interpolate)
             }
         }
@@ -42,7 +42,7 @@ struct RehearsalReadouts: View {
     }
 
     private func matchDetail(_ stats: RehearsalStatistics) -> String {
-        guard stats.assessedWords > 0 else { return "Not assessed yet" }
+        guard stats.assessedWords > 0 else { return "Not yet" }
         return stats.missedWords == 0 ? "Nothing missed" : "\(stats.missedWords) est. missed"
     }
 }

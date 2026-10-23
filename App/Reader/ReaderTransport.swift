@@ -27,7 +27,6 @@ struct ReaderTransport: View {
             }
         }
         .padding(.horizontal, 16).padding(.bottom, 6)
-        .background { ScrollEdgeAnchor(edge: .bottom).padding(.top, -24).ignoresSafeArea(edges: .bottom) }
         .calmAnimation(Motion.morph, value: model.mode)
         .calmAnimation(Motion.snappy, value: model.stageLocked)
         .sensoryFeedback(.selection, trigger: cueFeedback)

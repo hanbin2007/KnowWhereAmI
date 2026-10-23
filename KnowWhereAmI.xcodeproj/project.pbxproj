@@ -40,7 +40,6 @@
 		D60196C07E3F16908E50523D /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A4C483354E0B056A8B2BD5 /* Motion.swift */; };
 		48470D8CA90CBC2FEBDD2A3C /* PaceDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFC192EF6968EEBA17B7F84 /* PaceDial.swift */; };
 		0153B05B80176C7E001A87D1 /* ReadingMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E04B946BF46719B9B6D9F4 /* ReadingMetrics.swift */; };
-		D6D9BFD7EF5390FD6737DC4F /* ScrollEdgeAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042655741317EC25A72C31B8 /* ScrollEdgeAnchor.swift */; };
 		CCFCEA78645169D7FF402974 /* StatusDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16C48A45F7A12980BCEE9E7 /* StatusDot.swift */; };
 		8A213A179280B9A088E018ED /* Surfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3B024B120E658A82B20E45 /* Surfaces.swift */; };
 		CA7522F51E9415F47B993D89 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF48C766589D9E807466E73 /* Typography.swift */; };
@@ -69,6 +68,7 @@
 		1648788CD35378287700D8D6 /* ReportMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D7E1FAA4D2694AB01D90FBE /* ReportMetrics.swift */; };
 		8F46AE28C24949193CAC1FA8 /* ReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150F5081091BC7F4059E4B36 /* ReportSheet.swift */; };
 		67AEFB8AC841330A59C6A01C /* WordCoverageMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E387F571FCACC76FEBDE966 /* WordCoverageMap.swift */; };
+		CB066546C8E8878AFF5A0313 /* ManuscriptEdgeFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1877AA9FF67D2C8884F8D581 /* ManuscriptEdgeFade.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,7 +124,6 @@
 		82A4C483354E0B056A8B2BD5 /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
 		CEFC192EF6968EEBA17B7F84 /* PaceDial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaceDial.swift; sourceTree = "<group>"; };
 		78E04B946BF46719B9B6D9F4 /* ReadingMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingMetrics.swift; sourceTree = "<group>"; };
-		042655741317EC25A72C31B8 /* ScrollEdgeAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEdgeAnchor.swift; sourceTree = "<group>"; };
 		C16C48A45F7A12980BCEE9E7 /* StatusDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusDot.swift; sourceTree = "<group>"; };
 		8A3B024B120E658A82B20E45 /* Surfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Surfaces.swift; sourceTree = "<group>"; };
 		9AF48C766589D9E807466E73 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
@@ -153,6 +152,7 @@
 		2D7E1FAA4D2694AB01D90FBE /* ReportMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportMetrics.swift; sourceTree = "<group>"; };
 		150F5081091BC7F4059E4B36 /* ReportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportSheet.swift; sourceTree = "<group>"; };
 		6E387F571FCACC76FEBDE966 /* WordCoverageMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCoverageMap.swift; sourceTree = "<group>"; };
+		1877AA9FF67D2C8884F8D581 /* ManuscriptEdgeFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManuscriptEdgeFade.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -248,6 +248,7 @@
 		4C45C20110D9870AB776826A /* Reader */ = {
 			isa = PBXGroup;
 			children = (
+				1877AA9FF67D2C8884F8D581 /* ManuscriptEdgeFade.swift */,
 				171DFB41DEAEE53C5B407AB3 /* Console */,
 				6C65930FE57823318AD3BC31 /* ReaderTypeface.swift */,
 				C93DC89D2D700263A0E3D623 /* FocusLaneMark.swift */,
@@ -314,7 +315,6 @@
 				9AF48C766589D9E807466E73 /* Typography.swift */,
 				8A3B024B120E658A82B20E45 /* Surfaces.swift */,
 				C16C48A45F7A12980BCEE9E7 /* StatusDot.swift */,
-				042655741317EC25A72C31B8 /* ScrollEdgeAnchor.swift */,
 				78E04B946BF46719B9B6D9F4 /* ReadingMetrics.swift */,
 				CEFC192EF6968EEBA17B7F84 /* PaceDial.swift */,
 				82A4C483354E0B056A8B2BD5 /* Motion.swift */,
@@ -472,6 +472,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB066546C8E8878AFF5A0313 /* ManuscriptEdgeFade.swift in Sources */,
 				67AEFB8AC841330A59C6A01C /* WordCoverageMap.swift in Sources */,
 				8F46AE28C24949193CAC1FA8 /* ReportSheet.swift in Sources */,
 				1648788CD35378287700D8D6 /* ReportMetrics.swift in Sources */,
@@ -500,7 +501,6 @@
 				CA7522F51E9415F47B993D89 /* Typography.swift in Sources */,
 				8A213A179280B9A088E018ED /* Surfaces.swift in Sources */,
 				CCFCEA78645169D7FF402974 /* StatusDot.swift in Sources */,
-				D6D9BFD7EF5390FD6737DC4F /* ScrollEdgeAnchor.swift in Sources */,
 				0153B05B80176C7E001A87D1 /* ReadingMetrics.swift in Sources */,
 				48470D8CA90CBC2FEBDD2A3C /* PaceDial.swift in Sources */,
 				D60196C07E3F16908E50523D /* Motion.swift in Sources */,
