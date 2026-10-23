@@ -44,6 +44,14 @@ a distant jump. Unmatched speech holds the last position, and older audio finals
 can update coverage without rewinding newer speech. Explicit word selection and
 Live paragraph rescue remain available to re-anchor anywhere deliberately.
 
+Sensitivity scales with manuscript distance: nearby forward words can follow a
+single matching token, medium moves need two corroborating tokens, and distant
+moves need at least three exact tokens with stronger coverage and a clear lead
+over competing positions. Backward moves are more cautious. New unmatched short
+audio chunks can form a recovery phrase, so the reader does not wait forever for
+one long result. Revisions replace their own evidence rather than duplicating it;
+old transcript history and future provisional audio cannot confirm a jump.
+
 ## Rehearsal And Live
 
 - **Rehearsal** shows active time, finalized recognized words per minute,

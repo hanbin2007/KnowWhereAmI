@@ -147,3 +147,39 @@ The repaired app still needs a physical-iPhone retest before acceptance.
 The local signed test bundle uses Build 3 via a build-command override to
 distinguish it from the faulty Build 2; repository version metadata is unchanged.
 It has not been installed during this repair pass.
+
+## Distance-Adaptive Repair: 2026-10-23
+
+After testing Build 3 on the iPhone, the user reported continued sticking.
+New replays reproduced fixed short-fragment gates rejecting a nearby correct
+word after two ASR omissions, two-word medium moves, and separate one-word
+results that could never satisfy a per-result distant-recovery threshold.
+
+Movement confidence is now centralized in `TrackingSensitivity` and scales with
+actual manuscript distance. New unmatched audio can accumulate across distinct
+chunks; revisions replace evidence and cannot vote repeatedly. Chunk-boundary
+windows let a fresh coherent phrase recover after older unmatched chatter.
+Distant ambiguity waits for distinctive context, and stronger pending phrases
+can outweigh one coincidental next word. The hard sentence/paragraph bounds are
+unchanged; neither elapsed time nor failure count relaxes them.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Final core suite | 133 passed, 0 failed | `build/distance-sensitivity-final.log` |
+| Full app/UI suite during repair | 50 passed, 0 failed, no runtime warnings | `build/Distance-Adaptive-Reviewed-App.xcresult` |
+| Final native suite after recovery-window refinement | 41 passed, 0 failed, no runtime warnings | `build/Distance-Adaptive-Final-Native.xcresult` |
+| Signed iPhone Release, local Build 4 | Build and strict signature verification succeeded | `build/distance-adaptive-signed-device.log` |
+
+Coverage includes monotonic distance thresholds, nearby omissions/noisy tokens,
+two-word medium recovery, three-word distant recovery, duplicate/overlapping and
+out-of-order audio, ambiguous phrases, old chatter, manual reset, exact-path
+backward safeguards, and older finals excluded from future provisional evidence.
+The full UI run predates only the last recovery-window refinement; final core
+and native runs include it. Red replays/result bundles remain in `build/`.
+
+Rehearsal coverage rules were not changed. The integration tests distinguish
+matched final words from the existing estimated gap between finalized endpoints;
+provisional recovery does not become finalized coverage or finish a rehearsal.
+No speech/audio recording or additional model download was added. Build 4 was
+prepared, not installed, in this pass. Real-microphone retesting and measured
+device latency/accuracy remain acceptance gaps, not established improvements.

@@ -179,6 +179,81 @@ final class ReaderExperienceTests: XCTestCase {
         await waitForStop(model)
     }
 
+    func testNearbyWordsResumeFollowingAfterASROmissions() async throws {
+        let (model, _, speech, _) = try fixture(text: "We can create a better future together.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "we can", isFinal: true)))
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "better", isFinal: false)))
+        XCTAssertEqual(model.cursor, 4)
+        XCTAssertFalse(model.isFindingPosition)
+        XCTAssertEqual(model.confirmedCursor, 1)
+        await speech.send(.transcript(SpeechChunk(start: 2, end: 3, text: "future", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        XCTAssertEqual(model.statistics.assessedWords, 2)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testSeparateShortChunksCanRecoverWithoutReusingFinalizedHistory() async throws {
+        let (model, _, speech, _) = try fixture(text: "Opening remarks explain our purpose clearly. We can build a reliable future together.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "opening remarks explain our purpose clearly", isFinal: true)))
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "reliable", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 2, end: 3, text: "future", isFinal: false)))
+        XCTAssertEqual(model.cursor, 11)
+        XCTAssertFalse(model.isFindingPosition)
+        XCTAssertEqual(model.confirmedCursor, 5)
+        XCTAssertEqual(model.statistics.assessedWords, 6)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testDistantRecoveryRequiresThreeNewWordsAndScoresOnlyFinalAudio() async throws {
+        let text = "Opening remarks explain our purpose clearly. Careful planning helps every participant understand all important practical constraints before proceeding. Blue lanterns glow. Small rivers flow."
+        let (model, _, speech, _) = try fixture(text: text)
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "opening remarks explain our purpose clearly", isFinal: true)))
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "blue", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 2, end: 3, text: "lanterns", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 3, end: 4, text: "glow", isFinal: true)))
+        XCTAssertEqual(model.cursor, 20)
+        XCTAssertEqual(model.confirmedCursor, 20)
+        XCTAssertEqual(model.statistics.matchedWords, 7)
+        XCTAssertEqual(model.statistics.assessedWords, 21)
+        XCTAssertEqual(model.phase, .listening)
+        model.pause()
+        await waitForStop(model)
+    }
+
+    func testDelayedEarlierFinalCannotConfirmLaterProvisionalRecovery() async throws {
+        let text = "Opening remarks explain our purpose clearly. Careful planning helps every participant understand all important practical constraints before proceeding. Blue lanterns glow."
+        let (model, _, speech, _) = try fixture(text: text)
+        model.selectWord(5)
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 1, end: 2, text: "lanterns", isFinal: false)))
+        await speech.send(.transcript(SpeechChunk(start: 2, end: 3, text: "glow", isFinal: false)))
+        XCTAssertEqual(model.cursor, 5)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 1, text: "blue", isFinal: true)))
+        XCTAssertEqual(model.cursor, 20)
+        XCTAssertEqual(model.confirmedCursor, 5)
+        XCTAssertEqual(model.phase, .listening)
+        XCTAssertEqual(model.statistics.assessedWords, 0)
+        XCTAssertTrue(model.history.isEmpty)
+        model.pause()
+        await waitForStop(model)
+    }
+
     func testFinishingDrainsTheLastFinalResultBeforeSavingTheReport() async throws {
         let (model, _, speech, time) = try fixture()
         model.toggleListening()

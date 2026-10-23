@@ -26,7 +26,7 @@ public struct ScriptTracker: Sendable {
     private var confirmedEndUnit: Int?
     private var selectedAnchor = 0
     private var finished = false
-    private var pendingRecovery: (word: Int, text: String)?
+    private var recoverySpeech: [PendingSpeech] = []
     private var hypotheses: [HypothesisKey: HypothesisState] = [:]
     private var hypothesisOrder: [HypothesisKey] = []
     private var cursorHypothesis: HypothesisKey?
@@ -114,13 +114,11 @@ public struct ScriptTracker: Sendable {
             return snapshot(matched: true, evidence: isFinal ? finalEvidence(segmentTokens ?? fullTokens, endingAt: end) : nil)
         }
         var anchorWord = state.anchorWord
-        var shortRevisionEnd: Int?
+        var continuationEnd = expectedNewEnd
         if let end = state.endUnit {
             let predictedUnit = min(document.units.count - 1, max(0, end + cursorTokens.count - state.tokens.count))
             anchorWord = document.units[predictedUnit].wordIndex
-            if (1...2).contains(addedCount) {
-                shortRevisionEnd = predictedUnit
-            }
+            continuationEnd = predictedUnit
         }
         if hypotheses[key] == nil {
             hypothesisOrder.append(key)
@@ -134,63 +132,50 @@ public struct ScriptTracker: Sendable {
         let upper = upperWord == document.words.count ? document.units.count : document.wordUnitStarts[upperWord]
         let recentCount = min(spoken.count, addedCount > 0 ? min(6, addedCount) : 6)
         let recentStart = spoken.count - recentCount
-        let minimumRecentMatches = state.endUnit != nil && recentCount <= 2
-            ? 1 : Int(ceil(Double(recentCount) * 0.65))
-        let previousEnd = currentEndUnit ?? 0
-        let shortNewSegmentEnd = state.endUnit == nil && spoken.count <= 2 ? expectedNewEnd : nil
-        let supportsCurrentSpeech: (Alignment) -> Bool = { match in
-            match.recentMatches >= minimumRecentMatches
-                && (shortRevisionEnd.map { abs(match.endUnit - $0) <= 3 } ?? true)
-                && (shortNewSegmentEnd.map { abs(match.endUnit - $0) <= 1 } ?? true)
-                && (spoken.count > 2 || state.endUnit != nil
-                    || match.endUnit >= previousEnd)
+        let retracting = state.endUnit != nil && cursorTokens.count < state.tokens.count
+            && state.tokens.starts(with: cursorTokens)
+        let agreement = zip(state.tokens, cursorTokens).filter { $0.0 == $0.1 }.count
+        let replacing = state.endUnit != nil && !state.tokens.starts(with: cursorTokens)
+            && !cursorTokens.starts(with: state.tokens)
+            && Double(agreement) < Double(min(state.tokens.count, cursorTokens.count)) * 0.65
+        let freshTokens: [String]
+        if state.endUnit != nil { freshTokens = Array(cursorTokens.dropFirst(sharedPrefix)) }
+        else if segmentTokens == nil, fullTokens.starts(with: lastEvidenceTokens) {
+            freshTokens = Array(fullTokens.suffix(newCount))
+        } else { freshTokens = cursorTokens }
+        let recoveryWindows = updateRecoverySpeech(freshTokens, key: key, audioRange: audioRange)
+        let continuation = exactContinuation(cursorTokens, endingAt: continuationEnd,
+                                             bounds: allowedUnits, recentCount: recentCount).flatMap {
+            supportsMovement($0, retracting: retracting, replacing: replacing) ? $0 : nil
         }
-        let local = candidates(spoken, in: lower..<upper, recentStart: recentStart).filter {
-            acceptable($0, spokenCount: spoken.count, anchorWord: anchorWord, global: false)
-                && supportsCurrentSpeech($0)
-        }.sorted { rankedScore($0, anchor: anchorWord) > rankedScore($1, anchor: anchorWord) }
-
-        var match = local.first
-        let recoverySpoken = Array(spoken.suffix(recentCount))
-        if match == nil, recoverySpoken.count >= 3 {
-            var windows: [Range<Int>] = []
-            for token in recoverySpoken.suffix(8) {
-                guard let positions = document.positions[token] else { continue }
-                let occurrences = positions.filter { allowedUnits.contains($0) }
-                guard occurrences.count <= 16 else { continue }
-                for position in occurrences {
-                    let range = max(allowedLower, position - 32)..<min(allowedUpper, position + 33)
-                    if !windows.contains(where: { abs($0.lowerBound - range.lowerBound) < 16 }) {
-                        windows.append(range)
-                    }
+        let local = continuation.map { [$0] } ?? candidates(spoken, in: lower..<upper, recentStart: recentStart).filter {
+            supportsMovement($0, retracting: retracting, replacing: replacing)
+        }
+        let trustedContinuation = recoveryWindows.contains(where: { $0.count > recentCount }) ? nil : continuation
+        var movement = local
+        let localBest = trustedContinuation ?? chooseMovement(local, anchor: anchorWord, retracting: retracting)
+        let certainNearby = localBest.map {
+            abs(document.units[$0.endUnit].wordIndex - (currentWordIndex ?? selectedAnchor)) <= 3
+                && $0.recentExact == recentCount && recoveryWindows.allSatisfy { $0.count <= recentCount }
+        } ?? false
+        if trustedContinuation == nil, !certainNearby {
+            for spoken in recoveryWindows {
+                movement += recoveryCandidates(spoken, in: allowedUnits).filter {
+                    supportsMovement($0, retracting: false, replacing: replacing)
                 }
             }
-            var unique: [Int: Alignment] = [:]
-            for window in windows.prefix(24) {
-                for candidate in candidates(recoverySpoken, in: window)
-                    where supportsCurrentSpeech(candidate)
-                        && acceptable(candidate, spokenCount: recoverySpoken.count, anchorWord: anchorWord, global: true) {
-                    if candidate.score > (unique[candidate.endUnit]?.score ?? 0) { unique[candidate.endUnit] = candidate }
-                }
-            }
-            let global = unique.values.sorted { $0.score > $1.score }
-            if let best = global.first, global.dropFirst().allSatisfy({ best.score - $0.score >= 3 }) {
-                let word = document.units[best.endUnit].wordIndex
-                let corroborated = pendingRecovery.map { abs($0.word - word) <= 8 && $0.text != text } ?? false
-                pendingRecovery = (word, text)
-                if isFinal || corroborated || recoverySpoken.count <= 4 { match = best }
-            }
         }
-        guard let match else { return snapshot(matched: false) }
+        guard let match = trustedContinuation ?? chooseMovement(movement, anchor: anchorWord, retracting: retracting) else {
+            return snapshot(matched: false)
+        }
         state.tokens = cursorTokens
         state.endUnit = match.endUnit
         state.isFinalized = isFinal
         state.searchUnits = allowedUnits
-        state.recentTokenCount = recentCount
+        state.recentTokenCount = match.recentCount
         hypotheses[key] = state
         lastEvidenceTokens = fullTokens
         accept(endUnit: match.endUnit, isFinal: isFinal, hypothesis: key, audioRange: audioRange)
-        pendingRecovery = nil
         return snapshot(matched: true, evidence: isFinal ? finalEvidence(segmentTokens ?? fullTokens, endingAt: match.endUnit) : nil)
     }
 
@@ -203,7 +188,6 @@ public struct ScriptTracker: Sendable {
         currentEndUnit = end
         confirmedEndUnit = end
         finished = false
-        pendingRecovery = nil
         clearHypotheses()
         usesSelectedAnchor = true
     }
@@ -214,7 +198,6 @@ public struct ScriptTracker: Sendable {
         currentEndUnit = nil
         confirmedEndUnit = nil
         selectedAnchor = 0
-        pendingRecovery = nil
         finished = false
         clearHypotheses()
         usesSelectedAnchor = false
@@ -228,6 +211,115 @@ public struct ScriptTracker: Sendable {
 
     private func searchWordRange() -> Range<Int> {
         document.trackingWordRange(around: currentWordIndex ?? selectedAnchor)
+    }
+
+    private func supportsMovement(_ match: Alignment, retracting: Bool, replacing: Bool) -> Bool {
+        let displacement = document.units[match.endUnit].wordIndex - (currentWordIndex ?? selectedAnchor)
+        return TrackingSensitivity(displacement: displacement, retractingKnownSpeech: retracting,
+                                   replacingHypothesis: replacing)
+            .accepts(matches: match.recentMatches, exact: match.recentExact, observed: match.recentCount)
+    }
+
+    private func exactContinuation(_ tokens: [String], endingAt end: Int, bounds: Range<Int>,
+                                   recentCount: Int) -> Alignment? {
+        let start = end - tokens.count + 1
+        guard start >= 0, bounds.contains(end), tokens.indices.allSatisfy({
+            similarity(tokens[$0], document.units[start + $0].text) == 3
+        }) else { return nil }
+        let count = min(28, tokens.count)
+        return Alignment(endUnit: end, spokenStart: 0, matches: count, exact: count,
+                         score: Double(count) * 3, matchedUnits: Set((end - count + 1)...end),
+                         recentMatches: recentCount, recentExact: recentCount, recentCount: recentCount)
+    }
+
+    private func chooseMovement(_ matches: [Alignment], anchor: Int, retracting: Bool) -> Alignment? {
+        let ranked = matches.sorted {
+            let left = rankedScore($0, anchor: anchor)
+            let right = rankedScore($1, anchor: anchor)
+            return left == right ? $0.endUnit < $1.endUnit : left > right
+        }
+        guard let best = ranked.first else { return nil }
+        let word = document.units[best.endUnit].wordIndex
+        let sensitivity = TrackingSensitivity(displacement: word - (currentWordIndex ?? selectedAnchor),
+                                              retractingKnownSpeech: retracting)
+        if let alternative = ranked.dropFirst().first(where: {
+            abs(document.units[$0.endUnit].wordIndex - word) > 3
+        }), rankedScore(best, anchor: anchor) - rankedScore(alternative, anchor: anchor) < sensitivity.ambiguityMargin {
+            return nil
+        }
+        return best
+    }
+
+    private mutating func updateRecoverySpeech(_ tokens: [String], key: HypothesisKey,
+                                               audioRange: Range<Double>?) -> [[String]] {
+        recoverySpeech.removeAll { previous in
+            if previous.key == key { return true }
+            guard let earlier = previous.audioRange, let audioRange else { return false }
+            return earlier.lowerBound < audioRange.upperBound - 0.001
+                && earlier.upperBound > audioRange.lowerBound + 0.001
+        }
+        if !tokens.isEmpty {
+            recoverySpeech.append(PendingSpeech(key: key, tokens: Array(tokens.suffix(6)), audioRange: audioRange))
+        }
+        let order = hypothesisOrder
+        recoverySpeech.sort {
+            if let left = $0.audioRange, let right = $1.audioRange { return left.lowerBound < right.lowerBound }
+            return (order.firstIndex(of: $0.key) ?? 0) < (order.firstIndex(of: $1.key) ?? 0)
+        }
+        if recoverySpeech.count > 8 { recoverySpeech.removeFirst(recoverySpeech.count - 8) }
+        // An older final cannot use future provisional words to confirm a move.
+        let eligible = recoverySpeech.filter {
+            !isOlder(key, audioRange: audioRange, than: $0.key, audioEnd: $0.audioRange?.upperBound)
+        }
+        var windows: [[String]] = []
+        for start in eligible.indices {
+            let words = Array(eligible[start...].flatMap(\.tokens).suffix(6))
+            if words.count >= 2, !windows.contains(words) { windows.append(words) }
+        }
+        return windows
+    }
+
+    private func recoveryCandidates(_ spoken: [String], in bounds: Range<Int>) -> [Alignment] {
+        var unique: [Int: Alignment] = [:]
+        for match in exactCandidates(spoken, in: bounds) { unique[match.endUnit] = match }
+        var windows: [Range<Int>] = []
+        for token in spoken {
+            guard let positions = document.positions[token] else { continue }
+            let occurrences = positions.filter { bounds.contains($0) }
+            guard occurrences.count <= 16 else { continue }
+            for position in occurrences {
+                let range = max(bounds.lowerBound, position - 32)..<min(bounds.upperBound, position + 33)
+                if !windows.contains(where: { abs($0.lowerBound - range.lowerBound) < 16 }) { windows.append(range) }
+            }
+        }
+        for window in windows.prefix(24) {
+            for match in candidates(spoken, in: window) where match.score > (unique[match.endUnit]?.score ?? 0) {
+                unique[match.endUnit] = match
+            }
+        }
+        return Array(unique.values)
+    }
+
+    private func exactCandidates(_ spoken: [String], in bounds: Range<Int>) -> [Alignment] {
+        var seed: (offset: Int, positions: [Int])?
+        for (offset, token) in spoken.enumerated() {
+            guard let positions = document.positions[token] else { continue }
+            if let previous = seed, previous.positions.count <= positions.count { continue }
+            seed = (offset, positions)
+        }
+        guard let seed else { return [] }
+        var matches: [Alignment] = []
+        for position in seed.positions where bounds.contains(position) {
+            let start = position - seed.offset
+            let end = start + spoken.count - 1
+            guard start >= bounds.lowerBound, end < bounds.upperBound,
+                  spoken.indices.allSatisfy({ similarity(spoken[$0], document.units[start + $0].text) == 3 }) else { continue }
+            matches.append(Alignment(endUnit: end, spokenStart: 0, matches: spoken.count, exact: spoken.count,
+                                     score: Double(spoken.count) * 3, matchedUnits: Set(start...end),
+                                     recentMatches: spoken.count, recentExact: spoken.count, recentCount: spoken.count))
+            if matches.count == 64 { break }
+        }
+        return matches
     }
 
     private func isOlder(_ key: HypothesisKey, audioRange: Range<Double>?,
@@ -258,12 +350,12 @@ public struct ScriptTracker: Sendable {
             selectedAnchor = min((currentWordIndex ?? -1) + 1, max(0, document.words.count - 1))
         }
         usesSelectedAnchor = true
-        pendingRecovery = nil
         clearHypotheses()
     }
 
     private mutating func clearHypotheses() {
         hypotheses.removeAll()
+        recoverySpeech.removeAll()
         hypothesisOrder.removeAll()
         cursorHypothesis = nil
         confirmedHypothesis = nil
@@ -275,6 +367,9 @@ public struct ScriptTracker: Sendable {
     }
 
     private mutating func accept(endUnit: Int, isFinal: Bool, hypothesis: HypothesisKey, audioRange: Range<Double>?) {
+        recoverySpeech = recoverySpeech.filter {
+            isOlder(hypothesis, audioRange: audioRange, than: $0.key, audioEnd: $0.audioRange?.upperBound)
+        }
         let word = document.units[endUnit].wordIndex
         currentWordIndex = word
         currentEndUnit = endUnit
@@ -318,7 +413,7 @@ public struct ScriptTracker: Sendable {
         let changedCount = cursorTokens.count - sharedPrefix
         let predictedEnd = end + cursorTokens.count - state.tokens.count
         let matches = candidates(spoken, in: lower..<upper, recentStart: recentStart).filter {
-            acceptable($0, spokenCount: spoken.count, anchorWord: anchor, global: false)
+            acceptableEvidence($0, spokenCount: spoken.count, anchorWord: anchor)
                 && $0.recentMatches >= minimumRecentMatches
                 && (!(1...2).contains(changedCount) || abs($0.endUnit - predictedEnd) <= 3)
         }.sorted { rankedScore($0, anchor: anchor) > rankedScore($1, anchor: anchor) }
@@ -344,7 +439,7 @@ public struct ScriptTracker: Sendable {
         let lower = max(0, endUnit - min(2_048, spoken.count * 3 + 32) + 1)
         let anchor = document.units[endUnit].wordIndex
         guard let alignment = candidates(spoken, in: lower..<(endUnit + 1), endingAt: endUnit).first,
-              acceptable(alignment, spokenCount: spoken.count, anchorWord: anchor, global: false),
+              acceptableEvidence(alignment, spokenCount: spoken.count, anchorWord: anchor),
               let firstMatchedUnit = alignment.matchedUnits.min() else { return nil }
         let matchedWords = Set(alignment.matchedUnits.map { document.units[$0].wordIndex })
         let firstWord = document.units[firstMatchedUnit].wordIndex
@@ -353,15 +448,13 @@ public struct ScriptTracker: Sendable {
 
     private func rankedScore(_ match: Alignment, anchor: Int) -> Double {
         let distance = abs(document.units[match.endUnit].wordIndex - anchor)
-        return match.score - min(Double(distance) * 0.075, 4)
+        let context = match.score / Double(max(1, match.matches))
+        return Double(match.recentMatches) * 3 + Double(match.recentExact) * 1.5
+            + context - log1p(Double(distance)) * 0.5
     }
 
-    private func acceptable(_ match: Alignment, spokenCount: Int, anchorWord: Int, global: Bool) -> Bool {
+    private func acceptableEvidence(_ match: Alignment, spokenCount: Int, anchorWord: Int) -> Bool {
         let coverage = Double(match.matches) / Double(spokenCount - match.spokenStart)
-        if global {
-            if spokenCount <= 4 { return match.exact == spokenCount && match.spokenStart == 0 }
-            return match.matches >= 5 && match.exact >= 4 && coverage >= 0.85
-        }
         if spokenCount <= 2 {
             return match.exact == spokenCount && abs(document.units[match.endUnit].wordIndex - anchorWord) <= 3
         }
@@ -400,6 +493,7 @@ public struct ScriptTracker: Sendable {
             var matches = 0
             var exact = 0
             var recentMatches = 0
+            var recentExact = 0
             var matchedUnits: Set<Int> = []
             while row > 0, column > 0, scores[row * width + column] > 0 {
                 switch traces[row * width + column] {
@@ -411,7 +505,10 @@ public struct ScriptTracker: Sendable {
                         matchedUnits.insert(range.lowerBound + column - 1)
                         if row - 1 >= recentStart { recentMatches += 1 }
                     }
-                    if similarity(left, right) == 3 { exact += 1 }
+                    if similarity(left, right) == 3 {
+                        exact += 1
+                        if row - 1 >= recentStart { recentExact += 1 }
+                    }
                     row -= 1
                     column -= 1
                 case 2: row -= 1
@@ -421,7 +518,8 @@ public struct ScriptTracker: Sendable {
             }
             return Alignment(endUnit: range.lowerBound + ending.column - 1, spokenStart: row,
                              matches: matches, exact: exact, score: ending.score, matchedUnits: matchedUnits,
-                             recentMatches: recentMatches)
+                             recentMatches: recentMatches, recentExact: recentExact,
+                             recentCount: spoken.count - recentStart)
         }
     }
 
@@ -467,4 +565,12 @@ private struct Alignment {
     let score: Double
     let matchedUnits: Set<Int>
     let recentMatches: Int
+    let recentExact: Int
+    let recentCount: Int
+}
+
+private struct PendingSpeech {
+    let key: HypothesisKey
+    let tokens: [String]
+    let audioRange: Range<Double>?
 }

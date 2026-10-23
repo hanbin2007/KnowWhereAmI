@@ -207,11 +207,11 @@ Every SwiftUI file holds one component, and no file exceeds 500 lines.
 - Apply the same bounds to local alignment, wider recovery, predicted anchors,
   and cached hypotheses. Use the displayed matched position, not the last final
   result, so continuous provisional reading can advance across the manuscript.
-- Match the active audio segment, not accumulated old transcript context. Require
-  matching evidence among the newest spoken tokens. One or two new words cannot
-  authorize a distant move or a backward jump from a fresh audio segment. A
-  unique exact three-word phrase can recover beyond the short local word window,
-  but never beyond the sentence/paragraph bounds.
+- Match current audio, not accumulated already-matched transcript history.
+  Distance-adaptive confidence permits nearby forward following from a single
+  token, requires two tokens for medium moves, and requires three exact tokens
+  with stronger coverage and ambiguity separation for distant relocation.
+  Backward motion is stricter. Recovery remains inside sentence/paragraph bounds.
 - Failed recognition holds position without inventing final evidence. Explicit
   revocation may restore confirmation only inside the visible bounds. Audio time
   orders overlapping/merged hypotheses and confirmations; an older final can
@@ -227,6 +227,32 @@ could overstate a new fragment's confidence. Streaming replay tests now cover
 continuous whole-script partials, fresh and growing one-word fragments, noisy
 revisions, skipped sentences, long-sentence rereading, merged audio ranges, and
 out-of-order finals. Cursor confidence and finalized scoring remain separate.
+
+## Distance-Adaptive Following
+
+`TrackingSensitivity` centralizes movement confidence, separate from rehearsal
+evidence. Distance is measured in original manuscript words, while evidence uses
+normalized matching tokens (contractions and numbers may expand).
+
+- Forward distance 0-3: at least one matching token; nearby ASR omissions need
+  not freeze the cursor. Distance 4-12: at least two matches. Beyond 12: at least
+  three exact tokens. Required coverage rises from 50% to 85% with distance.
+- Backward movement needs two tokens nearby and three farther away. Verified
+  shortening of the same hypothesis can retract locally. Large unstable rewrites
+  retain a stronger coverage floor rather than borrowing earlier confidence.
+- Candidate ranking prioritizes recent matches, not the raw score of an old
+  long transcript. A distant winner must lead competing regions by a margin;
+  repeated phrases wait for distinctive context.
+- The recovery ledger contains only unmatched speech, capped at eight audio
+  chunks and six-token windows. Whole-chunk suffixes let fresh phrases escape
+  earlier chatter without arbitrarily trimming a noisy revision. Overlapping or
+  same-identity revisions replace evidence; audio time orders late arrivals.
+- An earlier final may only use evidence through its own audio end, never later
+  provisional words. Completed matches consume only their own and older pending
+  evidence. Manual re-anchors, restart, and new sessions clear recovery context.
+- Exact contiguous reading has a linear verification path. It still passes the
+  movement policy, and additional unmatched context can outweigh a coincidental
+  next-word match. No timeout or failure count expands the hard jump boundaries.
 
 ## Alignment Rules
 
