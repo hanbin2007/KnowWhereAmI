@@ -5,6 +5,7 @@ import SwiftUI
 struct RehearsalReadouts: View {
     let model: ReaderModel
     @ScaledMetric(relativeTo: .body) private var dialSize = 56.0
+    @Environment(\.dynamicTypeSize) private var typeSize
     private var dial: CGFloat { min(dialSize, 84) }
 
     var body: some View {
@@ -28,17 +29,23 @@ struct RehearsalReadouts: View {
         }
     }
 
+    /// Dial beside its caption; at accessibility sizes the caption moves below
+    /// the dial so neither has to wrap mid-word.
     private func readout<Dial: View>(title: String, detail: String, @ViewBuilder dial: () -> Dial) -> some View {
-        HStack(spacing: 12) {
+        let stacked = typeSize.isAccessibilitySize
+        let layout = stacked ? AnyLayout(VStackLayout(spacing: 6)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
             dial()
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+            VStack(alignment: stacked ? .center : .leading, spacing: 2) {
+                if !stacked {
+                    Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                }
                 Text(detail).font(.subheadline.weight(.semibold))
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                    .lineLimit(1).minimumScaleFactor(0.6)
                     .contentTransition(.interpolate)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: stacked ? .center : .leading)
     }
 
     private func matchDetail(_ stats: RehearsalStatistics) -> String {

@@ -21,16 +21,18 @@ struct MatchDial: View {
                 }
             }
             if showsValue {
-                VStack(spacing: -1) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(assessed > 0 ? "\(Int((share * 100).rounded()))" : "\u{2014}")
                         .font(.figure(.title3, weight: .semibold))
                         .monospacedDigit()
                         .contentTransition(.numericText(value: share))
                         .foregroundStyle(assessed > 0 ? .primary : .tertiary)
-                    Text("% match").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    if assessed > 0 {
+                        Text("%").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
                 }
                 .lineLimit(1).minimumScaleFactor(0.6)
-                .padding(10)
+                .padding(lineWidth + 6)
             }
         }
         .frame(width: diameter, height: diameter)

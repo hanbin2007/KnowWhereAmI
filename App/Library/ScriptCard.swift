@@ -63,19 +63,23 @@ struct ScriptCard: View {
         }
     }
 
-    @ViewBuilder private var badge: some View {
+    /// One fixed-height row, so titles line up across neighbouring cards.
+    private var badge: some View {
+        badgeContent.frame(height: 22, alignment: .leading)
+    }
+
+    @ViewBuilder private var badgeContent: some View {
         if selected {
             Label("Reading", systemImage: "book.pages.fill")
                 .font(.caption2.weight(.bold)).tracking(0.6).textCase(.uppercase)
                 .foregroundStyle(Theme.accent)
-                .padding(.horizontal, 8).padding(.vertical, 4)
+                .padding(.horizontal, 8).frame(maxHeight: .infinity)
                 .background(Theme.accent.opacity(0.12), in: Capsule())
                 // Optical alignment: the label, not the capsule, lines up with the title.
                 .padding(.leading, -8)
         } else {
             Text("Edited \(Text(script.modifiedAt, format: .relative(presentation: .named)))")
                 .font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
-                .padding(.vertical, 4)
         }
     }
 

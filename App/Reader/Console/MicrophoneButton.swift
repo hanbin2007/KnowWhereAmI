@@ -23,7 +23,7 @@ struct MicrophoneButton: View {
             .contentShape(Circle())
         }
         .buttonStyle(GlassControlStyle())
-        .glassEffect(.regular.tint(Theme.accent).interactive(), in: Circle())
+        .glassEffect(.regular.tint(Theme.accentDeep).interactive(), in: Circle())
         .glassEffectID("microphone", in: glass)
         .background {
             ZStack {

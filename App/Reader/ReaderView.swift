@@ -61,11 +61,8 @@ struct ReaderView: View {
             .accessibilityIdentifier("scriptLibrary").help("Script library")
             .matchedTransitionSource(id: "library", in: sheets)
         }
-        if model.mode == .rehearsal, let report = model.latestReport {
-            ToolbarItem(placement: .topBarTrailing) { lastRun(report) }
-            ToolbarSpacer(.fixed, placement: .topBarTrailing)
-        }
         ToolbarItemGroup(placement: .topBarTrailing) {
+            if model.mode == .rehearsal, let report = model.latestReport { lastRun(report) }
             Button("Edit script", systemImage: "square.and.pencil") {
                 openEditor(isNew: model.library.selectedID == nil)
             }
@@ -171,19 +168,18 @@ struct ReaderView: View {
         min(64, UIFontMetrics(forTextStyle: .body).scaledValue(for: CGFloat(model.saved.fontSize) * 0.78))
     }
 
-    /// The last rehearsal of this script, as a glass toolbar button.
+    /// The last rehearsal of this script: its match ring, sized like a toolbar
+    /// symbol so the title keeps its room.
     private func lastRun(_ report: RehearsalRecord) -> some View {
         let stats = report.statistics
+        let score = stats.accuracy.map { "\(Int(($0 * 100).rounded())) percent match" } ?? "Not assessed"
         return Button { model.showReport(report) } label: {
-            HStack(spacing: 6) {
-                MatchDial(matched: stats.matchedWords, missed: stats.missedWords, diameter: 18, lineWidth: 3, showsValue: false)
-                Text(stats.accuracy.map { "\(Int(($0 * 100).rounded()))%" } ?? "\u{2014}")
-                    .font(.subheadline.weight(.semibold)).monospacedDigit()
-            }
-            .padding(.horizontal, 4)
+            MatchDial(matched: stats.matchedWords, missed: stats.missedWords, diameter: 20, lineWidth: 3.5, showsValue: false)
+                .frame(width: 24, height: 24)
         }
         .matchedTransitionSource(id: "report", in: sheets)
-        .accessibilityLabel("Last rehearsal").accessibilityIdentifier("lastRehearsal").help("Last rehearsal")
+        .accessibilityLabel("Last rehearsal").accessibilityValue(score)
+        .accessibilityIdentifier("lastRehearsal").help("Last rehearsal")
     }
 
     private func openEditor(isNew: Bool) {

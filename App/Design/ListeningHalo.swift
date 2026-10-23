@@ -14,8 +14,8 @@ struct ListeningHalo: View {
                     ForEach(0..<2, id: \.self) { ring in
                         let phase = (time / 2.6 + Double(ring) / 2).truncatingRemainder(dividingBy: 1)
                         Circle()
-                            .stroke(color.opacity(0.32 * (1 - phase)), lineWidth: 1.5)
-                            .scaleEffect(1 + 0.36 * phase)
+                            .stroke(color.opacity(0.26 * (1 - phase)), lineWidth: 1.25)
+                            .scaleEffect(1 + 0.2 * phase)
                     }
                 }
             }

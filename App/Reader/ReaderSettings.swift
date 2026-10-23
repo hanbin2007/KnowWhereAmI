@@ -98,8 +98,8 @@ private struct TextSizeControl: View {
                     .contentTransition(.numericText(value: model.saved.fontSize))
                     .accessibilityIdentifier("readerTextSize")
             }
-            HStack(spacing: 10) {
-                step("Smaller text", symbol: "textformat.size.smaller", id: "decreaseTextSize", delta: -2)
+            HStack(spacing: 0) {
+                step("Smaller text", symbol: "textformat.size.smaller", id: "decreaseTextSize", delta: -2, edge: .leading)
                     .disabled(model.saved.fontSize <= 18)
                 Slider(value: Binding(get: { model.saved.fontSize }, set: { value in
                     let delta = value.rounded() - model.saved.fontSize
@@ -108,16 +108,17 @@ private struct TextSizeControl: View {
                 .tint(Theme.accent)
                 .accessibilityLabel("Text size")
                 .accessibilityValue("\(Int(model.saved.fontSize)) points")
-                step("Larger text", symbol: "textformat.size.larger", id: "increaseTextSize", delta: 2)
+                step("Larger text", symbol: "textformat.size.larger", id: "increaseTextSize", delta: 2, edge: .trailing)
                     .disabled(model.saved.fontSize >= 40)
             }
         }
         .sensoryFeedback(.selection, trigger: model.saved.fontSize)
     }
 
-    private func step(_ title: String, symbol: String, id: String, delta: Double) -> some View {
+    /// The glyph sits on the row's text edge; the 44 pt target extends toward the slider.
+    private func step(_ title: String, symbol: String, id: String, delta: Double, edge: Alignment) -> some View {
         Button { model.changeFontSize(by: delta) } label: {
-            Image(systemName: symbol).frame(width: 44, height: 44).contentShape(Rectangle())
+            Image(systemName: symbol).frame(width: 44, height: 44, alignment: edge).contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .accessibilityLabel(title).accessibilityIdentifier(id)
