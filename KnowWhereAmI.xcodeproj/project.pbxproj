@@ -141,7 +141,7 @@
 		D017CB6E790859091F9C4552 /* GlassIconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassIconButton.swift; sourceTree = "<group>"; };
 		4B6BA91D976A8843257B0AA0 /* MicrophoneButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophoneButton.swift; sourceTree = "<group>"; };
 		9C3A9EC07D6005765234203E /* ParagraphRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParagraphRail.swift; sourceTree = "<group>"; };
-		4BB954323CFD6879A9376E24 /* ReaderModel+Console.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderModel+Console.swift; sourceTree = "<group>"; };
+		4BB954323CFD6879A9376E24 /* ReaderModel+Console.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderModel+Console.swift"; sourceTree = "<group>"; };
 		D770E6C1BC6FBF22A9A89C8D /* RehearsalReadouts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RehearsalReadouts.swift; sourceTree = "<group>"; };
 		E22D014611269DE26A644FB3 /* CoverageBin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageBin.swift; sourceTree = "<group>"; };
 		9313876272D1048A36E3C9CC /* CoverageCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageCard.swift; sourceTree = "<group>"; };
