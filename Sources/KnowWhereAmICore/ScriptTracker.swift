@@ -25,6 +25,7 @@ public struct ScriptTracker: Sendable {
     private var currentEndUnit: Int?
     private var confirmedEndUnit: Int?
     private var selectedAnchor = 0
+    private var trackingAnchorWord = 0
     private var finished = false
     private var pendingRecovery: (word: Int, text: String)?
     private var hypotheses: [HypothesisKey: HypothesisState] = [:]
@@ -41,6 +42,14 @@ public struct ScriptTracker: Sendable {
         let fullTokens = EnglishNormalizer.tokenize(text)
         guard !document.units.isEmpty else { return snapshot(matched: false) }
         guard !fullTokens.isEmpty else { return revokeTentative() }
+        // Volatile hypotheses cannot move the search fence; only finalized speech
+        // or an explicit user re-anchor can change its reference position.
+        let allowedWords = searchWordRange()
+        guard !allowedWords.isEmpty else { return snapshot(matched: false) }
+        let allowedLower = document.wordUnitStarts[allowedWords.lowerBound]
+        let allowedUpper = allowedWords.upperBound == document.words.count
+            ? document.units.count : document.wordUnitStarts[allowedWords.upperBound]
+        let allowedUnits = allowedLower..<allowedUpper
         let spoken = Array(fullTokens.suffix(28))
         let key: HypothesisKey
         if let hypothesisID {
@@ -62,8 +71,28 @@ public struct ScriptTracker: Sendable {
             : (currentEndUnit ?? -1) + newCount
         let newAnchor = document.units[min(document.units.count - 1, max(0, newEnd))].wordIndex
         var state = hypotheses[key] ?? HypothesisState(anchorWord: newAnchor)
-        if let end = state.endUnit, fullTokens == state.tokens {
+        if let end = state.endUnit, isFinal, !state.isFinalized,
+           !allowedUnits.contains(end),
+           let revision = pendingFinal(fullTokens, segmentTokens: segmentTokens, state: state) {
+            // A matched partial may finalize, with revisions, after a newer
+            // partial. Validate its scoring without rewinding the visible cursor.
+            state.tokens = fullTokens
+            state.endUnit = revision.endUnit
+            state.isFinalized = true
+            hypotheses[key] = state
+            if revision.endUnit > (confirmedEndUnit ?? -1) {
+                confirmedEndUnit = revision.endUnit
+                confirmedWordIndex = document.units[revision.endUnit].wordIndex
+                trackingAnchorWord = document.units[revision.endUnit].wordIndex
+            }
+            lastEvidenceTokens = fullTokens
+            return snapshot(matched: true, evidence: revision.evidence)
+        }
+        if let end = state.endUnit, fullTokens == state.tokens, allowedUnits.contains(end) {
             accept(endUnit: end, isFinal: isFinal)
+            state.isFinalized = state.isFinalized || isFinal
+            state.searchUnits = allowedUnits
+            hypotheses[key] = state
             lastEvidenceTokens = fullTokens
             return snapshot(matched: true, evidence: isFinal ? finalEvidence(segmentTokens ?? fullTokens, endingAt: end) : nil)
         }
@@ -78,8 +107,9 @@ public struct ScriptTracker: Sendable {
             if hypothesisOrder.count > 32 { hypotheses.removeValue(forKey: hypothesisOrder.removeFirst()) }
             hypotheses[key] = state
         }
-        let lowerWord = max(0, anchorWord - 36)
-        let upperWord = min(document.words.count, anchorWord + 100)
+        anchorWord = min(allowedWords.upperBound - 1, max(allowedWords.lowerBound, anchorWord))
+        let lowerWord = max(allowedWords.lowerBound, anchorWord - 36)
+        let upperWord = min(allowedWords.upperBound, anchorWord + 100)
         let lower = document.wordUnitStarts[lowerWord]
         let upper = upperWord == document.words.count ? document.units.count : document.wordUnitStarts[upperWord]
         let local = candidates(spoken, in: lower..<upper).filter {
@@ -91,8 +121,8 @@ public struct ScriptTracker: Sendable {
             var windows: [Range<Int>] = []
             for token in spoken.suffix(8) {
                 guard let occurrences = document.positions[token], occurrences.count <= 16 else { continue }
-                for position in occurrences {
-                    let range = max(0, position - 32)..<min(document.units.count, position + 33)
+                for position in occurrences where allowedUnits.contains(position) {
+                    let range = max(allowedLower, position - 32)..<min(allowedUpper, position + 33)
                     if !windows.contains(where: { abs($0.lowerBound - range.lowerBound) < 16 }) {
                         windows.append(range)
                     }
@@ -114,14 +144,14 @@ public struct ScriptTracker: Sendable {
         }
         guard let match else {
             if !fullTokens.starts(with: lastEvidenceTokens) {
-                currentWordIndex = confirmedWordIndex
-                currentEndUnit = confirmedEndUnit
-                finished = false
+                retractWithinSearchBounds()
             }
             return snapshot(matched: false)
         }
         state.tokens = fullTokens
         state.endUnit = match.endUnit
+        state.isFinalized = isFinal
+        state.searchUnits = allowedUnits
         hypotheses[key] = state
         lastEvidenceTokens = fullTokens
         accept(endUnit: match.endUnit, isFinal: isFinal)
@@ -132,6 +162,7 @@ public struct ScriptTracker: Sendable {
     public mutating func select(wordIndex: Int) {
         guard document.words.indices.contains(wordIndex) else { return }
         selectedAnchor = wordIndex
+        trackingAnchorWord = wordIndex
         currentWordIndex = wordIndex
         confirmedWordIndex = wordIndex
         let end = wordIndex + 1 < document.wordUnitStarts.count ? document.wordUnitStarts[wordIndex + 1] - 1 : document.units.count - 1
@@ -149,6 +180,7 @@ public struct ScriptTracker: Sendable {
         currentEndUnit = nil
         confirmedEndUnit = nil
         selectedAnchor = 0
+        trackingAnchorWord = 0
         pendingRecovery = nil
         finished = false
         clearHypotheses()
@@ -156,17 +188,35 @@ public struct ScriptTracker: Sendable {
     }
 
     public mutating func revokeTentative() -> TrackingUpdate {
-        currentWordIndex = confirmedWordIndex
-        currentEndUnit = confirmedEndUnit
-        finished = false
+        retractWithinSearchBounds()
         clearHypotheses()
         return snapshot(matched: false)
+    }
+
+    private func searchWordRange() -> Range<Int> {
+        let anchored = document.trackingWordRange(around: trackingAnchorWord)
+        let visible = document.trackingWordRange(around: currentWordIndex ?? trackingAnchorWord)
+        let lower = max(anchored.lowerBound, visible.lowerBound)
+        return lower..<max(lower, min(anchored.upperBound, visible.upperBound))
+    }
+
+    private mutating func retractWithinSearchBounds() {
+        let allowed = searchWordRange()
+        if let confirmedWordIndex, allowed.contains(confirmedWordIndex) {
+            currentWordIndex = confirmedWordIndex
+            currentEndUnit = confirmedEndUnit
+        } else if confirmedWordIndex == nil, allowed.contains(0) {
+            currentWordIndex = nil
+            currentEndUnit = nil
+        }
+        finished = false
     }
 
     public mutating func beginSession() {
         if !usesSelectedAnchor {
             selectedAnchor = min((currentWordIndex ?? -1) + 1, max(0, document.words.count - 1))
         }
+        trackingAnchorWord = selectedAnchor
         usesSelectedAnchor = true
         pendingRecovery = nil
         clearHypotheses()
@@ -188,6 +238,7 @@ public struct ScriptTracker: Sendable {
         if isFinal {
             confirmedWordIndex = word
             confirmedEndUnit = endUnit
+            trackingAnchorWord = word
         }
         finished = isFinal && word == document.words.count - 1
     }
@@ -195,6 +246,25 @@ public struct ScriptTracker: Sendable {
     private func snapshot(matched: Bool, evidence: AlignmentEvidence? = nil) -> TrackingUpdate {
         TrackingUpdate(wordIndex: currentWordIndex, confirmedWordIndex: confirmedWordIndex,
                        isMatched: matched, isFinished: finished, evidence: evidence)
+    }
+
+    private func pendingFinal(_ tokens: [String], segmentTokens: [String]?, state: HypothesisState)
+        -> (endUnit: Int, evidence: AlignmentEvidence)? {
+        guard let end = state.endUnit, let bounds = state.searchUnits else { return nil }
+        let anchor = document.units[end].wordIndex
+        let lowerWord = max(0, anchor - 36)
+        let upperWord = min(document.words.count, anchor + 100)
+        let lower = max(bounds.lowerBound, document.wordUnitStarts[lowerWord])
+        let upper = min(bounds.upperBound, upperWord == document.words.count
+            ? document.units.count : document.wordUnitStarts[upperWord])
+        guard lower < upper else { return nil }
+        let spoken = Array(tokens.suffix(28))
+        let matches = candidates(spoken, in: lower..<upper).filter {
+            acceptable($0, spokenCount: spoken.count, anchorWord: anchor, global: false)
+        }.sorted { rankedScore($0, anchor: anchor) > rankedScore($1, anchor: anchor) }
+        guard let match = matches.first,
+              let evidence = finalEvidence(segmentTokens ?? tokens, endingAt: match.endUnit) else { return nil }
+        return (match.endUnit, evidence)
     }
 
     private func finalEvidence(_ tokens: [String], endingAt endUnit: Int) -> AlignmentEvidence? {
@@ -317,6 +387,8 @@ private struct HypothesisState: Sendable {
     let anchorWord: Int
     var tokens: [String] = []
     var endUnit: Int?
+    var isFinalized = false
+    var searchUnits: Range<Int>?
 }
 
 private struct Alignment {

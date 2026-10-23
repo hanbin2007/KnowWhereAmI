@@ -198,6 +198,25 @@ Every SwiftUI file holds one component, and no file exceeds 500 lines.
   `CoverageCard`, `MissedWordsSection`, `ManuscriptReviewView`, `ReportSheet`,
   `MatchRing`, `WordCoverageMap`, `CoverageBin`.
 
+## Automatic Position Limits: 2026-10-22
+
+- Automatic recognition may return to the beginning of the third previous
+  sentence, but not a fourth. Forward recovery ends at the end of the next
+  paragraph. Apple Natural Language supplies English sentence/paragraph
+  boundaries, including abbreviations and quoted sentences.
+- Apply the same bounds to local alignment, wider recovery, predicted anchors,
+  and cached hypotheses. Intersect the finalized/session anchor's bounds with
+  the currently displayed position's bounds so provisional updates cannot walk
+  the window across the manuscript or permit a large visible reversal.
+- Failed or revoked hypotheses restore confirmation only when that restoration
+  is in range. Otherwise retain the tentative position without inventing final
+  evidence. An earlier matched partial may still finalize its scoring, including
+  revised words, without pulling the visible cursor backward. These fences
+  constrain position endpoints, not the full final segment's historical coverage;
+  scoring must not invent omissions by truncating a real utterance.
+- Manual word selection and explicit Live paragraph rescue are intentional
+  re-anchors, not automatic jumps, and remain unrestricted by these bounds.
+
 ## Alignment Rules
 
 - The word highlight is sized from the font's ascender and descender, so it

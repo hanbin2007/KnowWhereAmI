@@ -34,6 +34,14 @@ scrolling temporarily suspends following; during listening it returns after a
 2.5-second peek. The scope button returns immediately. Text size and the follow
 preference are saved separately for each manuscript.
 
+Automatic following can move backward at most three sentences and forward only
+through the current paragraph and the next paragraph. English sentence and
+paragraph boundaries come from Apple's Natural Language tokenizer. Provisional
+results cannot repeatedly expand this search range; finalized speech advances
+it. Rejecting or revoking a result cannot snap the displayed position beyond
+these limits. Explicit word selection and Live paragraph rescue remain available
+to re-anchor anywhere deliberately.
+
 ## Rehearsal And Live
 
 - **Rehearsal** shows active time, finalized recognized words per minute,
@@ -76,7 +84,7 @@ preference are saved separately for each manuscript.
 - `Sources/KnowWhereAmICore/`: token ranges, English normalization, sequence
   alignment, bounded audio-hypothesis history, transcript replacement, import,
   and atomic persistence.
-- `Tests/`: platform-independent behavioral tests.
+- `Tests/`: core behavioral tests without microphone capture.
 - `AppTests/`: lifecycle and pipeline tests with a controlled speech boundary.
 - `UITests/`: actual simulator workflows and screenshot attachments.
 - `project.yml`: reproducible XcodeGen project definition; the generated project
@@ -99,8 +107,9 @@ appearance and the screenshot suites in dark, and uploads every screen as the
 
 This is a first working implementation, not a claimed acoustic-accuracy
 benchmark. Extremely repetitive passages without distinguishing context can be
-ambiguous. Global repositioning requires stronger evidence than local following;
-manual word selection remains available. English contraction/number normalization
+ambiguous. Wider recovery requires stronger evidence than local following and
+stays inside the automatic jump limits; manual word selection remains available.
+English contraction/number normalization
 covers common forms, not every date, acronym, currency, or alternate reading.
 The manuscript limit is 100,000 UTF-16 code units. No PDF/DOCX parsing, audio
 recording, cloud sync, or cloud transcription fallback is included. Repeated

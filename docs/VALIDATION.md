@@ -79,3 +79,31 @@ previous Xcode collection stall. Intentionally failing runs remain in `build/`.
 3. Check final-utterance scoring, interruption/disconnection/backgrounding, manual
    live rescue, lock, type size, Reduced Motion/Transparency, and VoiceOver.
 4. Run both modes for at least 15 minutes with the usual Auto-Lock preference.
+
+## Automatic Tracking Bounds: 2026-10-22
+
+PR #1 was merged as `d18c61c`. The subsequent tracking fix limits automatic
+position endpoints to three previous sentences and the current/next paragraph.
+Manual selection and Live rescue remain deliberate unrestricted re-anchors.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Final core behavioral suite | 97 passed, 0 failed | `build/bounded-tracking-final.log` |
+| Full native app/UI suite | 42 passed, 0 failed, no runtime warnings | `build/Bounded-Tracking-Final-App.xcresult` |
+| Final native app suite after delayed-final refinement | 33 passed, 0 failed, no runtime warnings | `build/Bounded-Tracking-Final-Native.xcresult` |
+| Final generic iPhone Release, arm64 | Build succeeded, unsigned | `build/bounded-tracking-device-final.log` |
+
+Toolchain: Xcode 27.0, iOS 27.0 (24A434), dedicated iPhone 17 QA simulator.
+These builds use the actual speech pipeline, not the older-toolchain CI stub;
+test audio events are controlled, not recorded from a microphone. The full UI
+run predates only the final delayed-final alignment refinement; the core and
+native suites were rerun after it. Unsigned compilation is not signed-device
+installation or real speech acceptance.
+
+Regression coverage includes exact backward/forward boundaries, strong recovery,
+abbreviations, CRLF/quoted paragraphs, long predicted anchors, provisional
+ratcheting, stale cached results, reset/resume, unrestricted manual re-anchoring,
+and failed/revoked results that must not snap outside the visible limits. Delayed
+finals with revised, shortened, or extended text retain validated full-segment
+coverage without moving the visible cursor. Out-of-window speech cannot finish
+a rehearsal or fabricate assessed words. Red-test logs are retained in `build/`.

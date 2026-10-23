@@ -93,6 +93,22 @@ final class ReaderExperienceTests: XCTestCase {
         await waitForStop(model)
     }
 
+    func testOutOfWindowSpeechCannotFinishOrScoreAFarAwayParagraph() async throws {
+        let (model, _, speech, _) = try fixture(text: "Opening remarks establish clear context.\n\nFurther details support careful reading.\n\nQuantum sensors reveal unexpected magnetic patterns.")
+        model.toggleListening()
+        await waitForStarts(speech, count: 1)
+        await speech.send(.listening)
+        await speech.send(.transcript(SpeechChunk(start: 0, end: 3, text: "quantum sensors reveal unexpected magnetic patterns", isFinal: true)))
+        XCTAssertNil(model.cursor)
+        XCTAssertNil(model.confirmedCursor)
+        XCTAssertEqual(model.phase, .listening)
+        XCTAssertTrue(model.isFindingPosition)
+        XCTAssertEqual(model.statistics.assessedWords, 0)
+        XCTAssertTrue(model.history.isEmpty)
+        model.pause()
+        await waitForStop(model)
+    }
+
     func testFinishingDrainsTheLastFinalResultBeforeSavingTheReport() async throws {
         let (model, _, speech, time) = try fixture()
         model.toggleListening()
