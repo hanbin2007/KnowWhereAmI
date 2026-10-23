@@ -3,7 +3,7 @@ name: UI Screenshots
 on:
   push:
     branches: ["claude/**"]
-    paths: ["App/**", "AppTests/**", "UITests/**", "Sources/**", "scripts/ci/**", ".github/workflows/ui-screenshots.yml"]
+    paths: ["App/**", "AppTests/**", "UITests/**", "Sources/**", "KnowWhereAmI.xcodeproj/**", "Package.swift", "scripts/ci/**", ".github/workflows/ui-screenshots.yml"]
   workflow_dispatch:
 
 concurrency:
