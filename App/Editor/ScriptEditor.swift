@@ -52,14 +52,14 @@ struct ScriptEditor: View {
                 Rectangle().fill(Theme.hairline).frame(height: 0.75).padding(.horizontal, 24)
                     .accessibilityHidden(true)
                 ZStack(alignment: .topLeading) {
-                    if text.isEmpty {
-                        Text("Type or paste your script")
-                            .font(.system(size: editorSize, design: typeface.design))
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 23).padding(.top, 20)
-                            .allowsHitTesting(false)
-                            .accessibilityHidden(true)
-                    }
+                    // Always present, only faded, so the editor keeps focus while typing begins.
+                    Text("Type or paste your script")
+                        .font(.system(size: editorSize, design: typeface.design))
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 23).padding(.top, 20)
+                        .opacity(text.isEmpty ? 1 : 0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                     TextEditor(text: $text)
                         .font(.system(size: editorSize, design: typeface.design))
                         .foregroundStyle(Theme.ink)
