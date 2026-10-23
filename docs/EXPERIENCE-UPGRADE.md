@@ -142,3 +142,58 @@ deployment target in the CI checkout only, then runs the app and UI suites in
 light appearance and the screenshot suites again in dark. `ScreenshotTourUITests`
 walks every primary surface. Screenshots are uploaded as the `screenshots`
 artifact. Real speech capture still requires Xcode 27 and a physical iPhone.
+
+## Liquid Glass Alignment: 2026-10-23
+
+The user asked for strict adherence to the Liquid Glass HIG and for glass
+wherever it belongs. Rules applied:
+
+- **Glass is the control layer, never the content layer.** Navigation bars,
+  toolbars, the search field, the console, and sheets use Liquid Glass.
+  Manuscript text, library cards, history rows, and report sections stay
+  opaque paper content.
+- **Content flows under bars.** The manuscript runs edge to edge. Legibility
+  comes from the system scroll edge effect, not custom opaque backdrops. The
+  UIKit reader is paired with floating glass through
+  `UIScrollEdgeElementContainerInteraction` (`ScrollEdgeAnchor`).
+- **System bars and controls first.** The script title and reading length are
+  the navigation title and subtitle (New York via bar appearance). Toolbar
+  groups are separated with `ToolbarSpacer`, and the last run is a glass toolbar
+  button. Mode and library sections are system segmented pickers. Text size is
+  a system `Slider`. Close and confirm use the xmark and prominent-glass
+  checkmark buttons.
+- **One container, morphing elements.** The console is one
+  `GlassEffectContainer`: a glass panel (mode picker, status, read-outs) plus
+  individual interactive glass buttons. Shared `glassEffectID`s let the
+  microphone and recenter button flow between Rehearsal and Live while the
+  other buttons emerge from or merge into their neighbours.
+- **Tint means something.** Only the microphone, the primary action, is tinted
+  glass. Lock uses a light tint only while engaged. Finish is plain glass with
+  an accent label.
+- **No glass on glass.** Nothing inside the glass panel is itself glass.
+- **Sheets keep system glass.** Partial-height sheets (Reading settings) show
+  the system glass background; no `presentationBackground` overrides.
+- **Accessibility.** System glass adapts to Reduce Transparency and Increase
+  Contrast, so the custom fallback was removed. Reduce Motion still disables
+  every custom animation through `calmAnimation`.
+- **Concentric shapes.** The console panel radius (38 pt) is concentric with
+  the iPhone display corners at the 16 pt inset.
+
+## Component Layout
+
+Every SwiftUI file holds one component, and no file exceeds 500 lines.
+
+- `App/Design/`: palette (`Theme`), `Motion`, `Typography`, `Surfaces`,
+  `ReadingMetrics`, the dials (`PaceDial`, `MatchDial`), `ListeningHalo`,
+  `StatusDot`, `FoldedSheet`, `ScrollEdgeAnchor`.
+- `App/Reader/Console/`: `ConsolePanel`, `ConsoleStatusRow`,
+  `RehearsalReadouts`, `ConsoleControls` (Rehearsal/Live rows), `MicrophoneButton`,
+  `GlassIconButton`, `ParagraphRail`, and console state on `ReaderModel`.
+- `App/Reader/`: `ReaderView`, `ReaderTransport` (the glass container),
+  `FocusLaneMark`, `BlankPage`, `ReaderSettings`, `ReaderTypeface`, and the UIKit
+  text surface.
+- `App/Library/`: `ScriptLibraryView`, `ScriptGallery`, `ScriptCard`,
+  `RehearsalHistoryList`, `HistoryRow`.
+- `App/Rehearsal/`: `RehearsalReportView`, `ReportHero`, `ReportMetrics`,
+  `CoverageCard`, `MissedWordsSection`, `ManuscriptReviewView`, `ReportSheet`,
+  `MatchRing`, `WordCoverageMap`, `CoverageBin`.
