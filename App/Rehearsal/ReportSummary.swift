@@ -6,11 +6,14 @@ struct ReportSummary: View {
     let stats: RehearsalStatistics
     let revealed: Bool
     @ScaledMetric(relativeTo: .largeTitle) private var ringSize = 72.0
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     private var percent: Int? { stats.accuracy.map { Int(($0 * 100).rounded()) } }
 
     var body: some View {
-        HStack(spacing: 18) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                                                 : AnyLayout(HStackLayout(spacing: 18))
+        return layout {
             MatchDial(matched: stats.matchedWords, missed: stats.missedWords, diameter: min(ringSize, 120),
                       lineWidth: 10, showsValue: false, progress: revealed ? 1 : 0)
                 .padding(5)
@@ -32,7 +35,7 @@ struct ReportSummary: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            .lineLimit(2).minimumScaleFactor(0.8)
+            .lineLimit(typeSize.isAccessibilitySize ? 4 : 2).minimumScaleFactor(0.8)
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .ignore)
