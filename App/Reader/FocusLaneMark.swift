@@ -5,6 +5,8 @@ struct FocusLaneMark: View {
     let locked: Bool
     let tentative: Bool
     let following: Bool
+    /// Height of the text it sits beside, so the mark matches the line.
+    var textHeight: CGFloat = 22
 
     var body: some View {
         ZStack {
@@ -16,12 +18,12 @@ struct FocusLaneMark: View {
             } else {
                 Capsule()
                     .fill(tentative ? Theme.amber : Theme.accent)
-                    .frame(width: 3, height: following ? 22 : 10)
+                    .frame(width: 3, height: following ? textHeight : textHeight * 0.45)
                     .opacity(following ? 0.75 : 0.35)
                     .transition(.scale.combined(with: .opacity))
             }
         }
-        .frame(width: 14, height: 24)
+        .frame(width: 14, height: textHeight)
         .calmAnimation(Motion.snappy, value: locked)
         .calmAnimation(Motion.snappy, value: following)
         .calmAnimation(Motion.snappy, value: tentative)

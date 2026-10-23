@@ -157,11 +157,18 @@ struct ReaderView: View {
         .overlay(alignment: .leading) {
             GeometryReader { geometry in
                 FocusLaneMark(locked: model.mode == .live && model.stageLocked,
-                              tentative: model.isTentative, following: model.followsPosition)
-                    .position(x: 10, y: geometry.size.height * ReadingFocus.fraction)
+                              tentative: model.isTentative, following: model.followsPosition,
+                              textHeight: laneMarkHeight)
+                    .position(x: 11, y: geometry.size.height * ReadingFocus.fraction
+                                  - ReaderTextSurface.lineSpacing(serif: typeface == .serif) / 2)
             }
             .allowsHitTesting(false).accessibilityHidden(true)
         }
+    }
+
+    /// Roughly the cap-to-baseline height of the manuscript at its current size.
+    private var laneMarkHeight: CGFloat {
+        min(64, UIFontMetrics(forTextStyle: .body).scaledValue(for: CGFloat(model.saved.fontSize) * 0.78))
     }
 
     /// The last rehearsal of this script, as a glass toolbar button.

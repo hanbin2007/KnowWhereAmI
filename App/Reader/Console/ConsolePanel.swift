@@ -33,6 +33,6 @@ struct ConsolePanel: View {
                     .transition(.blurReplace)
             }
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 16)
+        .padding(18)
     }
 }

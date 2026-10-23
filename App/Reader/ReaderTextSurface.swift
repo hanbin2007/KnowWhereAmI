@@ -80,7 +80,7 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         showsVerticalScrollIndicator = allowsInteraction
         if rebuild {
             let paragraph = NSMutableParagraphStyle()
-            paragraph.lineSpacing = serif ? 11 : 10
+            paragraph.lineSpacing = Self.lineSpacing(serif: serif)
             paragraph.paragraphSpacing = 6
             var base = UIFont.systemFont(ofSize: CGFloat(pointSize))
             if serif, let descriptor = base.fontDescriptor.withDesign(.serif) {
@@ -166,9 +166,17 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         }
         let glyphs = layoutManager.glyphRange(forCharacterRange: document.words[cursor].range, actualCharacterRange: nil)
         var rect = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
+        // Size the pill from the font's ascender and descender rather than the
+        // line fragment, which also carries the line spacing below the text.
+        let fragment = layoutManager.lineFragmentRect(forGlyphAt: glyphs.location, effectiveRange: nil)
+        let baseline = fragment.minY + layoutManager.location(forGlyphAt: glyphs.location).y
+        if let font = textStorage.attribute(.font, at: document.words[cursor].range.location, effectiveRange: nil) as? UIFont {
+            rect.origin.y = baseline - font.ascender
+            rect.size.height = font.ascender - font.descender
+        }
         rect.origin.x += textContainerInset.left
         rect.origin.y += textContainerInset.top
-        rect = rect.insetBy(dx: -5, dy: -1)
+        rect = rect.insetBy(dx: -6, dy: -3)
         let accent = UIColor(named: "AccentColor") ?? tintColor!
         let color: UIColor = tentative ? .dynamic(light: 0xE9B44C, dark: 0xF0B653) : accent
         highlight.backgroundColor = color.withAlphaComponent(dark ? 0.24 : 0.15)
@@ -214,6 +222,10 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
         let rect = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
         if rect.insetBy(dx: -4, dy: -4).contains(point) { onSelect?(word) }
     }
+
+    /// Space below each line. The visible text sits this much above the
+    /// line fragment's centre, which is what the focus lane aligns.
+    static func lineSpacing(serif: Bool) -> CGFloat { serif ? 11 : 10 }
 
     private struct Style: Equatable {
         let text: String

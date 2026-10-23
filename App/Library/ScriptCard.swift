@@ -26,7 +26,7 @@ struct ScriptCard: View {
                         .font(.display(.footnote)).foregroundStyle(.secondary)
                         .lineSpacing(2).lineLimit(4)
                     Spacer(minLength: 8)
-                    footer.padding(.trailing, 34)
+                    footer.padding(.trailing, 36)
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, minHeight: 236, alignment: .topLeading)
@@ -52,13 +52,14 @@ struct ScriptCard: View {
                 Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 28, height: 28)
                     .background(Theme.track, in: Circle())
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }
-            .padding(6).accessibilityLabel("Actions for \(script.content.title)")
+            // The circle's edges sit on the card's 16 pt content margins.
+            .padding(8).accessibilityLabel("Actions for \(script.content.title)")
         }
     }
 
@@ -69,6 +70,8 @@ struct ScriptCard: View {
                 .foregroundStyle(Theme.accent)
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(Theme.accent.opacity(0.12), in: Capsule())
+                // Optical alignment: the label, not the capsule, lines up with the title.
+                .padding(.leading, -8)
         } else {
             Text("Edited \(Text(script.modifiedAt, format: .relative(presentation: .named)))")
                 .font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
