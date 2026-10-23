@@ -197,3 +197,23 @@ Every SwiftUI file holds one component, and no file exceeds 500 lines.
 - `App/Rehearsal/`: `RehearsalReportView`, `ReportHero`, `ReportMetrics`,
   `CoverageCard`, `MissedWordsSection`, `ManuscriptReviewView`, `ReportSheet`,
   `MatchRing`, `WordCoverageMap`, `CoverageBin`.
+
+## Alignment Rules
+
+- The word highlight is sized from the font's ascender and descender, so it
+  has equal room above and below the word. Line-fragment rects carry the line
+  spacing below the text.
+- The focus lane mark centers on the text (the fragment's center minus half the
+  line spacing) and scales with the manuscript size.
+- Status rows: indicator and label 7 pt apart; secondary figures grouped on the
+  trailing edge with a hairline divider; monospaced digits throughout.
+- The console panel uses one 18 pt inset, so the picker, status row, and
+  readouts share a leading edge. Secondary buttons, the microphone, and Finish
+  share one centerline.
+- Badges align optically: the label, not its capsule, lines up with the title.
+  Badge rows have a fixed height, so titles align across neighbouring cards.
+- Edge glyphs (text-size buttons) sit on the row's text edges; their 44 pt hit
+  area extends inward.
+- Tile symbols occupy a fixed 20 pt slot, so values align across tiles.
+- At accessibility sizes, captions move below their dials instead of wrapping
+  mid-word.
