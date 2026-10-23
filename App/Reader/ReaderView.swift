@@ -9,7 +9,6 @@ struct ReaderView: View {
     @State private var editAfterLibrary: Bool?
     @AppStorage(ReaderTypeface.storageKey) private var typeface = ReaderTypeface.serif
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.dynamicTypeSize) private var typeSize
     @Namespace private var sheets
 
     init(model: ReaderModel = ReaderModel()) { _model = State(initialValue: model) }
@@ -26,32 +25,33 @@ struct ReaderView: View {
             Theme.paper.ignoresSafeArea()
             if model.document.words.isEmpty {
                 BlankPage { openEditor(isNew: true) }
-                    .padding(.bottom, 160)
+                    .padding(.bottom, 200)
                     .transition(.opacity.combined(with: .scale(scale: 0.97)))
             } else {
-                manuscript.transition(.opacity)
+                // The manuscript runs under the glass bars; the scroll edge
+                // effect keeps those bars legible.
+                manuscript.ignoresSafeArea().transition(.opacity)
             }
         }
         .overlay(alignment: .top) {
-            heading.dynamicTypeSize(...DynamicTypeSize.accessibility2)
+            GeometryReader { geometry in
+                ScrollEdgeAnchor(edge: .top).frame(height: geometry.safeAreaInsets.top)
+            }
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false).accessibilityHidden(true)
         }
         .overlay(alignment: .bottom) {
             ReaderTransport(model: model).dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
         .calmAnimation(Motion.gentle, value: model.document.words.isEmpty)
-        .navigationTitle("KnowWhereAmI")
-        .toolbarTitleDisplayMode(.inline)
+        .navigationTitle(model.saved.title)
+        .navigationSubtitle(ReadingLength.summary(words: model.document.words.count))
+        .toolbarTitleDisplayMode(.inlineLarge)
         .toolbar { toolbar }
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Text("KnowWhereAmI")
-                .font(.display(.subheadline, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-        }
         ToolbarItem(placement: .topBarLeading) {
             Button("Script library", systemImage: "books.vertical") {
                 model.pause()
@@ -59,6 +59,10 @@ struct ReaderView: View {
             }
             .accessibilityIdentifier("scriptLibrary").help("Script library")
             .matchedTransitionSource(id: "library", in: sheets)
+        }
+        if model.mode == .rehearsal, let report = model.latestReport {
+            ToolbarItem(placement: .topBarTrailing) { lastRun(report) }
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
             Button("Edit script", systemImage: "square.and.pencil") {
@@ -159,60 +163,17 @@ struct ReaderView: View {
         }
     }
 
-    // MARK: Heading
-
-    private var heading: some View {
-        HStack(alignment: .center, spacing: 14) {
-            VStack(alignment: .leading, spacing: 5) {
-                if !typeSize.isAccessibilitySize {
-                    Eyebrow(ReadingLength.summary(words: model.document.words.count))
-                        .accessibilityLabel(ReadingLength.summary(words: model.document.words.count))
-                        .accessibilityIdentifier("scriptSummary")
-                }
-                Text(model.saved.title)
-                    .font(.display(.title, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    .contentTransition(.opacity)
-                    .accessibilityAddTraits(.isHeader)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if model.mode == .rehearsal, let report = model.latestReport {
-                lastRun(report)
-                    .transition(.scale(scale: 0.8, anchor: .trailing).combined(with: .opacity))
-            }
-        }
-        .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 14)
-        .background {
-            LinearGradient(stops: [.init(color: Theme.paper, location: 0),
-                                   .init(color: Theme.paper, location: 0.62),
-                                   .init(color: Theme.paper.opacity(0), location: 1)],
-                           startPoint: .top, endPoint: .bottom)
-                .padding(.bottom, -40)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
-        }
-        .calmAnimation(Motion.gentle, value: model.mode)
-        .calmAnimation(Motion.gentle, value: model.latestReport?.id)
-    }
-
+    /// The last rehearsal of this script, as a glass toolbar button.
     private func lastRun(_ report: RehearsalRecord) -> some View {
         let stats = report.statistics
         return Button { model.showReport(report) } label: {
-            HStack(spacing: 8) {
-                MatchDial(matched: stats.matchedWords, missed: stats.missedWords, diameter: 22, lineWidth: 3.5, showsValue: false)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(stats.accuracy.map { "\(Int(($0 * 100).rounded()))%" } ?? "\u{2014}")
-                        .font(.figure(.subheadline, weight: .semibold)).monospacedDigit()
-                        .foregroundStyle(Theme.ink)
-                    Text("Last run").font(.caption2).foregroundStyle(.secondary)
-                }
+            HStack(spacing: 6) {
+                MatchDial(matched: stats.matchedWords, missed: stats.missedWords, diameter: 18, lineWidth: 3, showsValue: false)
+                Text(stats.accuracy.map { "\(Int(($0 * 100).rounded()))%" } ?? "\u{2014}")
+                    .font(.subheadline.weight(.semibold)).monospacedDigit()
             }
-            .padding(.leading, 9).padding(.trailing, 13).padding(.vertical, 7)
-            .readerGlass(Capsule(), interactive: true)
-            .contentShape(Capsule())
+            .padding(.horizontal, 4)
         }
-        .buttonStyle(ReaderControlStyle(pressedScale: 0.96))
         .matchedTransitionSource(id: "report", in: sheets)
         .accessibilityLabel("Last rehearsal").accessibilityIdentifier("lastRehearsal").help("Last rehearsal")
     }
@@ -230,103 +191,5 @@ struct ReaderView: View {
     private struct EditorRequest: Identifiable {
         let id = UUID()
         let isNew: Bool
-    }
-}
-
-private struct ReportSheet: View {
-    let record: RehearsalRecord
-    let onDone: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            RehearsalReportView(record: record)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Done", action: onDone).accessibilityIdentifier("closeReport")
-                    }
-                }
-        }
-    }
-}
-
-/// The marker in the left margin where the spoken line settles.
-private struct FocusLaneMark: View {
-    let locked: Bool
-    let tentative: Bool
-    let following: Bool
-
-    var body: some View {
-        ZStack {
-            if locked {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-                    .transition(.scale.combined(with: .opacity))
-            } else {
-                Capsule()
-                    .fill(tentative ? Theme.amber : Theme.accent)
-                    .frame(width: 3, height: following ? 22 : 10)
-                    .opacity(following ? 0.75 : 0.35)
-                    .transition(.scale.combined(with: .opacity))
-            }
-        }
-        .frame(width: 14, height: 24)
-        .calmAnimation(Motion.snappy, value: locked)
-        .calmAnimation(Motion.snappy, value: following)
-        .calmAnimation(Motion.snappy, value: tentative)
-    }
-}
-
-/// Shown when the selected manuscript has no words yet.
-private struct BlankPage: View {
-    let onAdd: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reducedMotion
-    @State private var settled = false
-
-    var body: some View {
-        VStack(spacing: 18) {
-            ZStack {
-                page.rotationEffect(.degrees(settled ? -9 : -3)).offset(x: settled ? -18 : -6, y: 6).opacity(0.55)
-                page.rotationEffect(.degrees(settled ? 7 : 2)).offset(x: settled ? 16 : 5, y: 2).opacity(0.8)
-                page.overlay(alignment: .topLeading) {
-                    VStack(alignment: .leading, spacing: 7) {
-                        ForEach([0.82, 0.64, 0.74, 0.4], id: \.self) { width in
-                            Capsule().fill(Theme.track).frame(width: 64 * width, height: 4)
-                        }
-                    }
-                    .padding(14)
-                }
-            }
-            .frame(height: 124)
-            .accessibilityHidden(true)
-            VStack(spacing: 8) {
-                Text("A blank page").font(.display(.title2, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("Write, paste, or import the words you plan to say. They stay on this iPhone.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-            }
-            Button(action: onAdd) {
-                Label("Add script", systemImage: "plus")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 22).frame(minHeight: 48)
-                    .background(Theme.microphone, in: Capsule())
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(ReaderControlStyle(pressedScale: 0.96))
-            .accessibilityIdentifier("addScript")
-        }
-        .padding(.horizontal, 40)
-        .onAppear {
-            if reducedMotion { settled = true } else { withAnimation(Motion.morph.delay(0.1)) { settled = true } }
-        }
-    }
-
-    private var page: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Theme.sheet)
-            .overlay { RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 0.75) }
-            .frame(width: 92, height: 118)
-            .shadow(color: .black.opacity(0.06), radius: 10, y: 5)
     }
 }

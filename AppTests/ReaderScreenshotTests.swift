@@ -90,7 +90,8 @@ final class ReaderScreenshotTests: XCTestCase {
             capture(window, name: "Saved rehearsal report details - controlled transcript")
         }
         model.presentedReport = nil
-        try await Task.sleep(for: .milliseconds(400))
+        try await Task.sleep(for: .milliseconds(900))
+        capture(window, name: "Reader with last rehearsal - controlled transcript")
         let record = try XCTUnwrap(model.history.first)
         let accessibleReport = UIHostingController(rootView: NavigationStack {
             RehearsalReportView(record: record)

@@ -76,11 +76,12 @@ struct ScriptEditor: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button("Cancel", systemImage: "xmark", role: .cancel) {
                         if isDirty { confirmsDiscard = true } else { dismiss() }
-                    }.accessibilityIdentifier("cancelEditor")
+                    }
+                    .accessibilityIdentifier("cancelEditor")
                 }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         if previousDraft != nil {
                             Button("Undo replacement", systemImage: "arrow.uturn.backward") {
@@ -99,18 +100,19 @@ struct ScriptEditor: View {
                         Button("Clear text", systemImage: "trash", role: .destructive) { replaceDraft(title: title, text: "") }
                             .accessibilityIdentifier("clearDraft")
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "ellipsis")
                     }
                     .accessibilityLabel("Script actions")
                     .accessibilityIdentifier("editorActions")
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save", systemImage: "checkmark") {
                         let saved = isNew ? model.createScript(title: title, text: text) : model.saveScript(title: title, text: text)
                         if saved { dismiss() }
                         else { importError = model.alert?.message; model.alert = nil }
                     }
-                    .fontWeight(.semibold)
+                    .buttonStyle(.glassProminent)
                     .accessibilityIdentifier("saveScript")
                     .disabled(title.count > 80 || text.utf16.count > ScriptStore.maximumTextLength)
                 }
@@ -139,7 +141,6 @@ struct ScriptEditor: View {
             Button("Discard changes", role: .destructive) { dismiss() }
         }
         .interactiveDismissDisabled(isDirty)
-        .presentationBackground(Theme.paper)
     }
 
     private var isDirty: Bool { text != initialText || title != initialTitle }

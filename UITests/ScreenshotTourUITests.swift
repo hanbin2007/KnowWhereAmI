@@ -16,13 +16,13 @@ final class ScreenshotTourUITests: XCTestCase {
         reader.coordinate(withNormalizedOffset: CGVector(dx: 0.10, dy: 0.34)).tap()
         snap(app, "02 Reader position selected")
 
-        app.buttons["mode-live"].tap()
+        app.buttons["Live"].tap()
         XCTAssertTrue(app.buttons["nextParagraph"].waitForExistence(timeout: 3))
         app.buttons["nextParagraph"].tap()
         app.switches["stageLock"].tap()
         snap(app, "03 Live locked")
         app.switches["stageLock"].tap()
-        app.buttons["mode-rehearsal"].tap()
+        app.buttons["Rehearsal"].tap()
 
         app.buttons["scriptLibrary"].tap()
         XCTAssertTrue(app.buttons["closeLibrary"].waitForExistence(timeout: 3))

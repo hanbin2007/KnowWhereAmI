@@ -141,7 +141,10 @@ final class ReaderTextSurface: UITextView, UITextViewDelegate {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window == nil { driver.cancel() } else { setNeedsLayout() }
+        if window == nil { driver.cancel() } else {
+            setNeedsLayout()
+            NotificationCenter.default.post(name: .readerSurfaceDidAppear, object: self)
+        }
     }
 
     private func paintProgress() {

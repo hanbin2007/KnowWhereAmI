@@ -115,9 +115,8 @@ final class ReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Practice script"].waitForExistence(timeout: 3))
         attachScreenshot(app, name: "Multiple manuscripts")
         app.staticTexts["Practice script"].tap()
-        let practiceSummary = expectation(for: NSPredicate(format: "label BEGINSWITH %@", "144 words"),
-                                          evaluatedWith: app.staticTexts["scriptSummary"])
-        wait(for: [practiceSummary], timeout: 3)
+        let practiceSummary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "144 words")).firstMatch
+        XCTAssertTrue(practiceSummary.waitForExistence(timeout: 3))
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Practice script"].waitForExistence(timeout: 4))
@@ -139,7 +138,7 @@ final class ReaderUITests: XCTestCase {
 
     func testLiveModeKeepsRescueControlsAvailableWhilePositionIsLocked() {
         let app = launch()
-        app.buttons["mode-live"].tap()
+        app.buttons["Live"].tap()
         XCTAssertTrue(app.buttons["nextParagraph"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.otherElements["rehearsalMetrics"].exists)
         app.buttons["nextParagraph"].tap()
@@ -156,7 +155,7 @@ final class ReaderUITests: XCTestCase {
         attachScreenshot(app, name: "Live mode locked with rescue controls")
         app.buttons["previousParagraph"].tap()
         XCTAssertEqual(app.staticTexts["readerPosition"].label, "Position 8 of 144 words")
-        app.buttons["mode-rehearsal"].tap()
+        app.buttons["Rehearsal"].tap()
         XCTAssertTrue(app.buttons["finishRehearsal"].exists)
     }
 
