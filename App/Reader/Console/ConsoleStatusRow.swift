@@ -16,6 +16,8 @@ struct ConsoleStatusRow: View {
                         .background(Theme.onAir, in: Capsule())
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                         .accessibilityHidden(true)
+                } else if model.isPreparing {
+                    ProgressView().controlSize(.mini)
                 } else {
                     StatusDot(color: model.statusColor, pulsing: model.isWorking)
                 }

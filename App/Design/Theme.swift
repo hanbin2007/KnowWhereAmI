@@ -4,8 +4,6 @@ import UIKit
 /// The reading room: warm paper, quiet ink, one evergreen accent.
 enum Theme {
     static let paper = Color(uiColor: .paper)
-    static let sheet = Color(uiColor: .dynamic(light: 0xFFFDF8, dark: 0x181D1B))
-    static let raised = Color(uiColor: .dynamic(light: 0xEFEBE3, dark: 0x222826))
     static let ink = Color(uiColor: .ink)
     /// The asset is referenced by name so the tint never falls back to system blue.
     static let accent = Color("AccentColor")

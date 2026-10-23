@@ -32,7 +32,7 @@ final class ReaderUITests: XCTestCase {
         app.buttons["editorActions"].tap()
         app.buttons["clearDraft"].tap()
         app.buttons["cancelEditor"].tap()
-        app.buttons["Discard changes"].tap()
+        app.buttons["Discard Changes"].tap()
         edit.tap()
         XCTAssertEqual(app.textViews["scriptBodyField"].value as? String, "Hello everyone. Today we create a better future together.")
         app.buttons["cancelEditor"].tap()
@@ -112,9 +112,9 @@ final class ReaderUITests: XCTestCase {
         app.buttons["saveScript"].tap()
         XCTAssertTrue(waitForTitle(app, "Second talk", timeout: 4))
         app.buttons["scriptLibrary"].tap()
-        XCTAssertTrue(app.staticTexts["Practice script"].waitForExistence(timeout: 3))
+        XCTAssertTrue(manuscriptRow(app, "Practice script").waitForExistence(timeout: 3))
         attachScreenshot(app, name: "Multiple manuscripts")
-        manuscriptCard(app, "Practice script").tap()
+        manuscriptRow(app, "Practice script").tap()
         let practiceLoaded = expectation(for: NSPredicate(format: "label ENDSWITH %@", "of 144 words"),
                                          evaluatedWith: app.staticTexts["readerPosition"])
         wait(for: [practiceLoaded], timeout: 3)
@@ -122,13 +122,13 @@ final class ReaderUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(waitForTitle(app, "Practice script", timeout: 4))
         app.buttons["scriptLibrary"].tap()
-        app.buttons["Actions for Second talk"].tap()
+        manuscriptRow(app, "Second talk").swipeLeft()
         app.buttons["Duplicate"].tap()
-        XCTAssertTrue(app.staticTexts["Second talk copy"].waitForExistence(timeout: 3))
-        app.buttons["Actions for Second talk"].tap()
+        XCTAssertTrue(manuscriptRow(app, "Second talk copy").waitForExistence(timeout: 3))
+        manuscriptRow(app, "Second talk").swipeLeft()
         app.buttons["Delete"].tap()
-        app.buttons["Delete script"].tap()
-        let removed = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts["Second talk"])
+        app.buttons["Delete Script"].tap()
+        let removed = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: manuscriptRow(app, "Second talk"))
         wait(for: [removed], timeout: 3)
         app.buttons["closeLibrary"].tap()
         XCTAssertTrue(waitForTitle(app, "Second talk copy", timeout: 3))
@@ -186,8 +186,8 @@ final class ReaderUITests: XCTestCase {
         return false
     }
 
-    private func manuscriptCard(_ app: XCUIApplication, _ title: String) -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "manuscript-", title)).firstMatch
+    private func manuscriptRow(_ app: XCUIApplication, _ title: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label == %@", "manuscript-", title)).firstMatch
     }
 
     private func attachScreenshot(_ app: XCUIApplication, name: String) {

@@ -11,21 +11,3 @@ extension Font {
         .system(style, design: .rounded, weight: weight)
     }
 }
-
-/// Small tracked capitals used to label sections and context.
-struct Eyebrow: View {
-    let text: String
-    var color: Color = .secondary
-    init(_ text: String, color: Color = .secondary) {
-        self.text = text
-        self.color = color
-    }
-
-    var body: some View {
-        Text(text)
-            .font(.caption2.weight(.semibold))
-            .tracking(1.4)
-            .textCase(.uppercase)
-            .foregroundStyle(color)
-    }
-}

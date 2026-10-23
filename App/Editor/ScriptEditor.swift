@@ -30,7 +30,7 @@ struct ScriptEditor: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
-                    TextField("Untitled script", text: $title)
+                    TextField("Title", text: $title)
                         .font(.display(.title, weight: .semibold))
                         .foregroundStyle(Theme.ink)
                         .submitLabel(.done)
@@ -53,8 +53,8 @@ struct ScriptEditor: View {
                     .accessibilityHidden(true)
                 ZStack(alignment: .topLeading) {
                     if text.isEmpty {
-                        Text("Start with the first sentence you\u{2019}ll say\u{2026}")
-                            .font(.system(size: editorSize, design: typeface.design)).italic()
+                        Text("Type or paste your script")
+                            .font(.system(size: editorSize, design: typeface.design))
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 23).padding(.top, 20)
                             .allowsHitTesting(false)
@@ -72,7 +72,7 @@ struct ScriptEditor: View {
                 }
             }
             .background(Theme.paper)
-            .navigationTitle(isNew ? "New script" : "Edit script")
+            .navigationTitle(isNew ? "New Script" : "Edit Script")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -84,25 +84,25 @@ struct ScriptEditor: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         if previousDraft != nil {
-                            Button("Undo replacement", systemImage: "arrow.uturn.backward") {
+                            Button("Undo Replacement", systemImage: "arrow.uturn.backward") {
                                 if let draft = previousDraft {
                                     title = draft.title; text = draft.text; previousDraft = nil
                                 }
                             }.accessibilityIdentifier("undoDraftReplacement")
                         }
-                        Button("Import text file", systemImage: "doc.badge.plus") { showsImporter = true }
+                        Button("Import Text File", systemImage: "doc.badge.plus") { showsImporter = true }
                         PasteButton(payloadType: String.self) { strings in
                             if let pasted = strings.first { replaceDraft(title: title, text: pasted) }
                         }
-                        Button("Practice script", systemImage: "doc.text") {
+                        Button("Practice Script", systemImage: "doc.text") {
                             replaceDraft(title: ReaderModel.practice.title, text: ReaderModel.practice.text)
                         }
-                        Button("Clear text", systemImage: "trash", role: .destructive) { replaceDraft(title: title, text: "") }
+                        Button("Clear Text", systemImage: "trash", role: .destructive) { replaceDraft(title: title, text: "") }
                             .accessibilityIdentifier("clearDraft")
                     } label: {
                         Image(systemName: "ellipsis")
                     }
-                    .accessibilityLabel("Script actions")
+                    .accessibilityLabel("Script Actions")
                     .accessibilityIdentifier("editorActions")
                 }
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
@@ -137,8 +137,8 @@ struct ScriptEditor: View {
                 Text(importError ?? "")
             }
         }
-        .confirmationDialog("Discard changes?", isPresented: $confirmsDiscard, titleVisibility: .visible) {
-            Button("Discard changes", role: .destructive) { dismiss() }
+        .confirmationDialog("Discard Changes?", isPresented: $confirmsDiscard, titleVisibility: .visible) {
+            Button("Discard Changes", role: .destructive) { dismiss() }
         }
         .interactiveDismissDisabled(isDirty)
     }

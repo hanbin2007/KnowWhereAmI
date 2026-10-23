@@ -7,6 +7,8 @@ struct MatchDial: View {
     var diameter: CGFloat = 66
     var lineWidth: CGFloat = 4
     var showsValue = true
+    /// Draws the arcs in from 0 to 1, as Activity rings do.
+    var progress: Double = 1
     private var assessed: Int { matched + missed }
     private var share: Double { assessed > 0 ? Double(matched) / Double(assessed) : 0 }
 
@@ -14,9 +16,10 @@ struct MatchDial: View {
         ZStack {
             Circle().stroke(Theme.track, lineWidth: lineWidth)
             if assessed > 0 {
-                ring(from: 0, to: share).stroke(Theme.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                ring(from: 0, to: share * progress).stroke(Theme.accent, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 if missed > 0 {
-                    ring(from: min(1, share + gap), to: 1 - gap)
+                    let start = min(1, share + gap)
+                    ring(from: start, to: start + max(0, 1 - gap - start) * progress)
                         .stroke(Theme.missed, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 }
             }

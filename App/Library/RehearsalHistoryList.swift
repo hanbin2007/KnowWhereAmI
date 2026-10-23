@@ -23,7 +23,6 @@ struct RehearsalHistoryList: View {
                         } label: {
                             HistoryRow(record: record)
                         }
-                        .listRowBackground(Theme.sheet)
                         .swipeActions {
                             Button("Delete", systemImage: "trash", role: .destructive) { onDelete(record) }
                         }
@@ -34,15 +33,14 @@ struct RehearsalHistoryList: View {
             }
         }
         .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .overlay {
             if records.isEmpty {
                 if !searching.isEmpty { ContentUnavailableView.search(text: searching) }
                 else {
                     ContentUnavailableView {
-                        Label("No rehearsals yet", systemImage: "waveform.badge.mic")
+                        Label("No Rehearsals", systemImage: "waveform.badge.mic")
                     } description: {
-                        Text("Finish a rehearsal to keep its pace, match, and missed words here.")
+                        Text("Finished rehearsals appear here with their pace, match, and missed words.")
                     }
                 }
             }

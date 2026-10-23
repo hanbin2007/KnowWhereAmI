@@ -24,12 +24,12 @@ extension ReaderModel {
 
     var primaryActionTitle: String {
         switch phase {
-        case .listening: "Pause listening"
-        case .preparing, .downloading: "Cancel preparation"
-        case .stopping, .finishing: "Stopping microphone"
-        case .paused: "Resume listening"
-        case .finished: "Read again"
-        default: "Start listening"
+        case .listening: "Pause"
+        case .preparing, .downloading: "Cancel"
+        case .stopping, .finishing: "Stopping"
+        case .paused: "Resume"
+        case .finished: "Read Again"
+        default: "Start Listening"
         }
     }
 

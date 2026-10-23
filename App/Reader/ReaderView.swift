@@ -26,9 +26,17 @@ struct ReaderView: View {
         ZStack {
             Theme.paper.ignoresSafeArea()
             if model.document.words.isEmpty {
-                BlankPage { openEditor(isNew: true) }
-                    .padding(.bottom, 200)
-                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                ContentUnavailableView {
+                    Label("No Text", systemImage: "text.page")
+                } description: {
+                    Text("Write, paste, or import the words you plan to say.")
+                } actions: {
+                    Button("Add Script") { openEditor(isNew: true) }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("addScript")
+                }
+                .padding(.bottom, 200)
+                .transition(.opacity)
             } else {
                 // The manuscript runs under the glass bars and dissolves just
                 // before them, like the system soft scroll edge effect.
@@ -54,25 +62,25 @@ struct ReaderView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button("Script library", systemImage: "books.vertical") {
+            Button("Script Library", systemImage: "books.vertical") {
                 model.pause()
                 showsLibrary = true
             }
-            .accessibilityIdentifier("scriptLibrary").help("Script library")
+            .accessibilityIdentifier("scriptLibrary").help("Script Library")
             .matchedTransitionSource(id: "library", in: sheets)
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
             if model.mode == .rehearsal, let report = model.latestReport { lastRun(report) }
-            Button("Edit script", systemImage: "square.and.pencil") {
+            Button("Edit Script", systemImage: "square.and.pencil") {
                 openEditor(isNew: model.library.selectedID == nil)
             }
-            .accessibilityIdentifier("editScript").help("Edit script")
+            .accessibilityIdentifier("editScript").help("Edit Script")
             .matchedTransitionSource(id: "editor", in: sheets)
-            Button("Reader settings", systemImage: "textformat.size") {
+            Button("Reader Settings", systemImage: "textformat.size") {
                 model.pause()
                 showsSettings = true
             }
-            .accessibilityIdentifier("readerSettings").help("Reader settings")
+            .accessibilityIdentifier("readerSettings").help("Reader Settings")
             .matchedTransitionSource(id: "settings", in: sheets)
         }
     }
@@ -178,8 +186,8 @@ struct ReaderView: View {
                 .frame(width: 24, height: 24)
         }
         .matchedTransitionSource(id: "report", in: sheets)
-        .accessibilityLabel("Last rehearsal").accessibilityValue(score)
-        .accessibilityIdentifier("lastRehearsal").help("Last rehearsal")
+        .accessibilityLabel("Last Rehearsal").accessibilityValue(score)
+        .accessibilityIdentifier("lastRehearsal").help("Last Rehearsal")
     }
 
     private func openEditor(isNew: Bool) {

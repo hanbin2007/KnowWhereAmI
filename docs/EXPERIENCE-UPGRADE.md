@@ -217,3 +217,31 @@ Every SwiftUI file holds one component, and no file exceeds 500 lines.
 - Tile symbols occupy a fixed 20 pt slot, so values align across tiles.
 - At accessibility sizes, captions move below their dials instead of wrapping
   mid-word.
+
+## Apple Design Pass: 2026-10-23
+
+The rehearsal report read as generic and over-designed: tracked-caps eyebrows,
+editorial verdicts, chips, shadowed cards, and a contribution-graph mosaic. It
+now follows the patterns of Apple's own summary screens.
+
+- **Rehearsal report** (Fitness workout summary, Health, iPhone Storage): an
+  inset-grouped `List` with sentence-case section headers.
+  - Summary row: an Activity-style ring beside "Script Match" in large rounded
+    type.
+  - A 2×2 details grid (label above a rounded value and unit).
+  - A Storage-style stacked bar with a dot legend.
+  - A Screen Time-style column strip from the first word to the last.
+  - Plain missed-word rows.
+  - Explanations in section footers.
+  - The title and date are the navigation title and subtitle.
+- **Console read-outs:** Fitness live metrics, not dials. The system spinner
+  replaces the custom preparing animation.
+- **Library:** a Notes-style inset-grouped list. Rows show the title, then date
+  and first line, then length and last match, with a checkmark on the current
+  script. Swipe actions and context menus replace the custom cards and ellipsis
+  buttons.
+- **Empty states:** `ContentUnavailableView` throughout.
+- **Copy:** buttons, menu items, and navigation titles use title-style
+  capitalization (Add Script, Delete Script, Review Manuscript).
+- **Removed:** tracked-caps eyebrows, shadowed surface cards, the folded-corner
+  shape, the pace subdial, the tile mosaic, and the verdict copy.

@@ -35,7 +35,7 @@ struct ScriptLibraryView: View {
         NavigationStack {
             ZStack {
                 if section == .scripts {
-                    ScriptGallery(model: model, scripts: scripts, searching: search,
+                    ScriptList(model: model, scripts: scripts, searching: search,
                                   onOpen: { script in
                                       perform { model.selectManuscript(script.id) }
                                       if failure == nil { onChoose() }
@@ -47,10 +47,10 @@ struct ScriptLibraryView: View {
                                   onDuplicate: { script in perform { model.duplicateManuscript(script.id) } },
                                   onDelete: { deletingScript = $0 },
                                   onNew: onNew)
-                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .transition(.opacity)
                 } else {
                     RehearsalHistoryList(records: records, searching: search) { deletingRecord = $0 }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .transition(.opacity)
                 }
             }
             .safeAreaBar(edge: .top) {
@@ -63,7 +63,6 @@ struct ScriptLibraryView: View {
                 .padding(.horizontal, 20).padding(.vertical, 8)
                 .accessibilityIdentifier("librarySection")
             }
-            .background(Theme.paper)
             .calmAnimation(Motion.morph, value: section)
             .searchable(text: $search, prompt: section == .scripts ? "Search scripts" : "Search rehearsals")
             .navigationTitle("Library")
@@ -74,23 +73,23 @@ struct ScriptLibraryView: View {
                         .accessibilityIdentifier("closeLibrary")
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("New script", systemImage: "plus", action: onNew)
+                    Button("New Script", systemImage: "plus", action: onNew)
                         .accessibilityIdentifier("newScript")
                 }
             }
-            .confirmationDialog("Delete script?", isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }), titleVisibility: .visible) {
-                Button("Delete script", role: .destructive) {
+            .confirmationDialog("Delete Script?", isPresented: Binding(get: { deletingScript != nil }, set: { if !$0 { deletingScript = nil } }), titleVisibility: .visible) {
+                Button("Delete Script", role: .destructive) {
                     if let deletingScript { perform { model.deleteManuscript(deletingScript.id) } }
                     deletingScript = nil
                 }
             } message: { Text(deletingScript?.content.title ?? "") }
-            .confirmationDialog("Delete rehearsal?", isPresented: Binding(get: { deletingRecord != nil }, set: { if !$0 { deletingRecord = nil } }), titleVisibility: .visible) {
-                Button("Delete rehearsal", role: .destructive) {
+            .confirmationDialog("Delete Rehearsal?", isPresented: Binding(get: { deletingRecord != nil }, set: { if !$0 { deletingRecord = nil } }), titleVisibility: .visible) {
+                Button("Delete Rehearsal", role: .destructive) {
                     if let deletingRecord { perform { model.deleteRehearsal(deletingRecord.id) } }
                     deletingRecord = nil
                 }
             }
-            .alert("Couldn't update library", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
+            .alert("Couldn\u{2019}t Update Library", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(failure ?? "") }
         }

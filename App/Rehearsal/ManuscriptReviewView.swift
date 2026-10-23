@@ -8,10 +8,10 @@ struct ManuscriptReviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 14) {
+                HStack(spacing: 16) {
                     legend("Matched", color: Theme.ink)
-                    legend("Est. missed", color: RehearsalColor.missed)
-                    legend("Not assessed", color: .secondary)
+                    legend("Missed", color: RehearsalColor.missed)
+                    legend("Not Assessed", color: Color(uiColor: .spokenInk))
                 }
                 Text(reviewText)
                     .font(.display(.body)).lineSpacing(8)
@@ -21,14 +21,18 @@ struct ManuscriptReviewView: View {
             .padding(24)
         }
         .background(Theme.paper)
-        .navigationTitle("Manuscript review").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Manuscript").navigationBarTitleDisplayMode(.inline)
     }
 
     private func legend(_ title: String, color: Color) -> some View {
-        HStack(spacing: 5) {
-            Circle().fill(color).frame(width: 7, height: 7)
-            Text(title).font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+        Label {
+            Text(title)
+        } icon: {
+            Circle().fill(color).frame(width: 8, height: 8)
         }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .labelStyle(.titleAndIcon)
     }
 
     private var reviewText: AttributedString {

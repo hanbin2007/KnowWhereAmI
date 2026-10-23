@@ -28,19 +28,19 @@ struct ReaderSettings: View {
                     Text("Text")
                 }
                 Section {
-                    Toggle("Follow my voice", isOn: Binding(get: { model.saved.followsPosition },
+                    Toggle("Follow Reading Position", isOn: Binding(get: { model.saved.followsPosition },
                                                            set: { model.setFollowPreference($0) }))
                         .accessibilityIdentifier("followPosition")
                 } footer: {
                     Text("Keeps the spoken line in the focus lane. Scrolling by hand pauses following for a moment.")
                 }
                 Section("Speech") {
-                    Label("Recognized on this iPhone", systemImage: "iphone.gen3")
-                    Label("Audio is never recorded", systemImage: "waveform.slash")
+                    Label("On-Device Recognition", systemImage: "iphone.gen3")
+                    Label("Audio Never Recorded", systemImage: "waveform.slash")
                     Label("English (US)", systemImage: "character.bubble")
                 }
                 if !model.heard.isEmpty {
-                    Section("Last heard") {
+                    Section("Last Heard") {
                         Text(model.heard)
                             .font(.display(.body)).italic()
                             .foregroundStyle(.secondary)

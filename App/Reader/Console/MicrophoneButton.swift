@@ -33,7 +33,6 @@ struct MicrophoneButton: View {
                     .stroke(Theme.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .calmAnimation(Motion.gentle, value: model.progress)
-                PreparingArc(active: model.isPreparing)
             }
             .frame(width: Self.size + 12, height: Self.size + 12)
             .accessibilityHidden(true)
@@ -43,25 +42,5 @@ struct MicrophoneButton: View {
         .help(model.primaryActionTitle)
         .disabled(model.document.words.isEmpty || model.isStopping)
         .calmAnimation(Motion.snappy, value: model.phase)
-    }
-}
-
-/// An amber comet that circles the microphone while speech is being prepared.
-private struct PreparingArc: View {
-    let active: Bool
-    @Environment(\.accessibilityReduceMotion) private var reducedMotion
-
-    var body: some View {
-        if active {
-            TimelineView(.animation(paused: reducedMotion)) { context in
-                Circle().trim(from: 0, to: 0.24)
-                    .stroke(AngularGradient(colors: [Theme.amber.opacity(0), Theme.amber], center: .center,
-                                            startAngle: .degrees(0), endAngle: .degrees(86)),
-                            style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                    .rotationEffect(.degrees(context.date.timeIntervalSinceReferenceDate * 300))
-            }
-            .transition(.opacity)
-            .accessibilityHidden(true)
-        }
     }
 }

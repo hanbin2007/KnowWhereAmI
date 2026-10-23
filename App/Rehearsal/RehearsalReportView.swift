@@ -1,6 +1,9 @@
 import KnowWhereAmICore
 import SwiftUI
 
+/// A rehearsal summary in the manner of Fitness and Health: an inset-grouped
+/// list, large rounded figures with their units, and the fine print in section
+/// footers.
 struct RehearsalReportView: View {
     let record: RehearsalRecord
     private let document: ScriptDocument
@@ -13,40 +16,51 @@ struct RehearsalReportView: View {
         self.record = record
         document = ScriptDocument(text: record.scriptText)
         bins = CoverageBin.make(wordCount: document.words.count, matched: record.statistics.matchedWordIndices,
-                                missed: record.statistics.omittedWordIndices)
+                                missed: record.statistics.omittedWordIndices, maximumBins: 48)
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Eyebrow(record.endedAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().hour().minute()))
-                    Text(record.title)
-                        .font(.display(.largeTitle, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ReportHero(stats: stats, revealed: revealed)
-                ReportMetrics(stats: stats)
-                CoverageCard(record: record, wordCount: document.words.count, bins: bins, revealed: revealed)
-                MissedWordsSection(record: record, document: document)
-                Label {
-                    Text("Estimates use finalized transcription, not pronunciation. Unassessed words are not counted as missed. Paused and preparation time are excluded from pace.")
-                } icon: {
-                    Image(systemName: "info.circle")
-                }
-                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        List {
+            Section {
+                ReportSummary(stats: stats, revealed: revealed)
             }
-            .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 36)
+            Section("Details") {
+                ReportMetricGrid(stats: stats)
+            }
+            Section {
+                CoverageBar(stats: stats, wordCount: document.words.count)
+                CoverageStrip(bins: bins, revealed: revealed)
+                NavigationLink("Review Manuscript") { ManuscriptReviewView(record: record) }
+            } header: {
+                Text("Coverage")
+            } footer: {
+                Text("Words you didn\u{2019}t reach aren\u{2019}t counted as missed.")
+            }
+            Section {
+                if missedIndices.isEmpty {
+                    Label(stats.assessedWords > 0 ? "No Missed Words" : "No Speech Was Scored",
+                          systemImage: stats.assessedWords > 0 ? "checkmark.circle" : "waveform.slash")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(missedIndices, id: \.self) { index in
+                        MissedWordRow(index: index, document: document, scriptText: record.scriptText)
+                    }
+                }
+            } header: {
+                Text("Missed Words")
+            } footer: {
+                Text("Estimates come from finalized transcription, not pronunciation. Paused and preparation time are excluded from pace.")
+            }
         }
-        .background(Theme.paper)
-        .navigationTitle("Rehearsal").navigationBarTitleDisplayMode(.inline)
+        .listStyle(.insetGrouped)
+        .navigationTitle(record.title)
+        .navigationSubtitle(record.endedAt.formatted(date: .abbreviated, time: .shortened))
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("rehearsalReport")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 ShareLink(item: summary) { Image(systemName: "square.and.arrow.up") }
-                    .accessibilityLabel("Share rehearsal summary")
+                    .accessibilityLabel("Share Summary")
             }
         }
         .onAppear {
@@ -54,6 +68,8 @@ struct RehearsalReportView: View {
             if reducedMotion { revealed = true } else { withAnimation(Motion.reveal.delay(0.15)) { revealed = true } }
         }
     }
+
+    private var missedIndices: [Int] { stats.omittedWordIndices.filter { document.words.indices.contains($0) } }
 
     private var summary: String {
         let rate = stats.wordsPerMinute.map { "\(Int($0.rounded())) WPM" } ?? "Not available"

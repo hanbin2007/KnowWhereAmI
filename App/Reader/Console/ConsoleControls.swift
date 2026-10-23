@@ -9,7 +9,7 @@ struct RehearsalControls: View {
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 10) {
-                GlassIconButton(title: "Restart from beginning", symbol: "arrow.counterclockwise", id: "restartReading",
+                GlassIconButton(title: "Restart", symbol: "arrow.counterclockwise", id: "restartReading",
                                 glass: glass) { model.restart() }
                 RecenterButton(model: model, glass: glass, onCue: onCue)
             }
@@ -43,17 +43,17 @@ struct LiveControls: View {
             .glassEffect(model.stageLocked ? .regular.tint(Theme.accent.opacity(0.25)).interactive() : .regular.interactive(),
                          in: Circle())
             .glassEffectID("stageLock", in: glass)
-            .accessibilityLabel("Lock reading position").accessibilityIdentifier("stageLock")
-            .accessibilityValue(model.stageLocked ? "Locked" : "Unlocked").help("Lock reading position")
+            .accessibilityLabel("Lock Reading Position").accessibilityIdentifier("stageLock")
+            .accessibilityValue(model.stageLocked ? "Locked" : "Unlocked").help("Lock Reading Position")
             Spacer(minLength: 0)
-            GlassIconButton(title: "Previous paragraph", symbol: "backward.end.fill", id: "previousParagraph", glass: glass) {
+            GlassIconButton(title: "Previous Paragraph", symbol: "backward.end.fill", id: "previousParagraph", glass: glass) {
                 model.jumpParagraph(-1); onCue()
             }
             .disabled(!model.canJumpParagraph(-1))
             Spacer(minLength: 0)
             MicrophoneButton(model: model, glass: glass)
             Spacer(minLength: 0)
-            GlassIconButton(title: "Next paragraph", symbol: "forward.end.fill", id: "nextParagraph", glass: glass) {
+            GlassIconButton(title: "Next Paragraph", symbol: "forward.end.fill", id: "nextParagraph", glass: glass) {
                 model.jumpParagraph(1); onCue()
             }
             .disabled(!model.canJumpParagraph(1))
@@ -70,7 +70,7 @@ struct RecenterButton: View {
     let onCue: () -> Void
 
     var body: some View {
-        GlassIconButton(title: "Return to reading position", symbol: "scope", id: "recenterReading", glass: glass,
+        GlassIconButton(title: "Return to Reading Position", symbol: "scope", id: "recenterReading", glass: glass,
                         tint: model.followsPosition ? Color.primary : Theme.accent) {
             model.recenter(); onCue()
         }
@@ -95,7 +95,7 @@ struct FinishButton: View {
         .buttonStyle(GlassControlStyle())
         .glassEffect(.regular.interactive(), in: Capsule())
         .glassEffectID("finishRehearsal", in: glass)
-        .accessibilityLabel("Finish rehearsal").accessibilityIdentifier("finishRehearsal").help("Finish rehearsal")
+        .accessibilityLabel("Finish Rehearsal").accessibilityIdentifier("finishRehearsal").help("Finish Rehearsal")
         .disabled(!model.hasRehearsal)
     }
 }
